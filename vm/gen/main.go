@@ -242,6 +242,15 @@ func stripStackDecl(body string) string {
 func substituteLocals(body string) string {
 	body = strings.ReplaceAll(body, "interp.Bytecode.", "bc.")
 	body = strings.ReplaceAll(body, "interp.Bytecode\n", "bc\n")
+	lines := strings.Split(body, "\n")
+	out := lines[:0]
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "bc := bc" {
+			continue
+		}
+		out = append(out, line)
+	}
+	body = strings.Join(out, "\n")
 	return body
 }
 

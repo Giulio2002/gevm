@@ -504,6 +504,11 @@ func (h *Handler) runInterpreterLoop(interp *vm.Interpreter, depth int) {
 			return
 		}
 
+		if h.tryHandlePrecompileCall(interp, depth+1) {
+			interp.ResetAction()
+			continue
+		}
+
 		// Process the sub-frame (pass pointer to avoid 304-byte copy)
 		frameResult := h.ExecuteFrame(&interp.ActionData, depth+1, interp.Memory)
 		interp.ResetAction()
@@ -516,6 +521,76 @@ func (h *Handler) runInterpreterLoop(interp *vm.Interpreter, depth int) {
 			h.handleCreateReturn(interp, frameResult.Create)
 		}
 	}
+}
+
+// tryHandlePrecompileCall completes zero-value precompile calls without creating
+// a child frame. Value-transferring calls still use executeCall because they
+// need journal checkpoint/transfer handling.
+func (h *Handler) tryHandlePrecompileCall(interp *vm.Interpreter, depth int) bool {
+	if interp.ActionData.Kind != vm.FrameInputCall {
+		return false
+	}
+	inputs := &interp.ActionData.Call
+	if tv := inputs.Value.TransferValue(); tv != nil && !tv.IsZero() {
+		return false
+	}
+	precompile := h.Precompiles.Get(inputs.BytecodeAddress)
+	if precompile == nil {
+		return false
+	}
+	if depth > CallStackLimit {
+		h.handleCallReturn(interp, vm.NewCallOutcome(
+			vm.NewInterpreterResult(vm.InstructionResultCallTooDeep, nil, vm.NewGas(inputs.GasLimit)),
+			inputs.ReturnMemoryOffset,
+		))
+		return true
+	}
+
+	if h.hooks != nil && h.hooks.OnEnter != nil {
+		h.hooks.OnEnter(depth, callSchemeToOpcode(inputs.Scheme), inputs.Caller,
+			inputs.BytecodeAddress, inputs.Input, inputs.GasLimit, inputs.Value.Value)
+	}
+
+	outcome := executePrecompileNoState(precompile, inputs.Input, inputs.GasLimit, inputs.ReturnMemoryOffset)
+	if h.hooks != nil && h.hooks.OnExit != nil {
+		gasUsed := inputs.GasLimit - outcome.Result.Gas.Remaining()
+		h.hooks.OnExit(depth, outcome.Result.Output, gasUsed,
+			resultToError(outcome.Result.Result), outcome.Result.Result.IsRevert())
+	}
+	h.handleCallReturn(interp, outcome)
+	return true
+}
+
+func executePrecompileNoState(
+	precompile *precompiles.Precompile,
+	input types.Bytes,
+	gasLimit uint64,
+	retMemOffset vm.MemoryRange,
+) vm.CallOutcome {
+	gas := vm.NewGas(gasLimit)
+	execResult := precompile.Execute(input, gasLimit)
+	if execResult.IsErr() {
+		resultCode := vm.InstructionResultPrecompileError
+		if *execResult.Err == precompiles.PrecompileErrorOutOfGas {
+			resultCode = vm.InstructionResultPrecompileOOG
+		}
+		return vm.NewCallOutcome(
+			vm.NewInterpreterResult(resultCode, nil, gas),
+			retMemOffset,
+		)
+	}
+
+	output := execResult.Output
+	gas.RecordRefund(output.GasRefund)
+	gas.RecordCost(output.GasUsed)
+	resultCode := vm.InstructionResultReturn
+	if output.Reverted {
+		resultCode = vm.InstructionResultRevert
+	}
+	return vm.NewCallOutcome(
+		vm.NewInterpreterResult(resultCode, output.Bytes, gas),
+		retMemOffset,
+	)
 }
 
 // handleCallReturn processes a call sub-frame result and updates the parent interpreter.

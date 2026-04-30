@@ -1216,12 +1216,13 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 				return
 			}
 			dest := int(target[0])
-			bc := bc
 			if dest >= bc.originalLen || bc.code[dest] != opcode.JUMPDEST {
 				interp.Halt(InstructionResultInvalidJump)
 				return
 			}
-			bc.ensureJumpTable()
+			if !bc.jumpTableReady {
+				bc.ensureJumpTable()
+			}
 			if bc.jumpTable[dest/8]&(1<<(uint(dest)%8)) == 0 {
 				interp.Halt(InstructionResultInvalidJump)
 				return
@@ -1251,12 +1252,13 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 					return
 				}
 				dest := int(target[0])
-				bc := bc
 				if dest >= bc.originalLen || bc.code[dest] != opcode.JUMPDEST {
 					interp.Halt(InstructionResultInvalidJump)
 					return
 				}
-				bc.ensureJumpTable()
+				if !bc.jumpTableReady {
+					bc.ensureJumpTable()
+				}
 				if bc.jumpTable[dest/8]&(1<<(uint(dest)%8)) == 0 {
 					interp.Halt(InstructionResultInvalidJump)
 					return
@@ -3225,12 +3227,13 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 				return
 			}
 			dest := int(target[0])
-			bc := bc
 			if dest >= bc.originalLen || bc.code[dest] != opcode.JUMPDEST {
 				interp.Halt(InstructionResultInvalidJump)
 				return
 			}
-			bc.ensureJumpTable()
+			if !bc.jumpTableReady {
+				bc.ensureJumpTable()
+			}
 			if bc.jumpTable[dest/8]&(1<<(uint(dest)%8)) == 0 {
 				interp.Halt(InstructionResultInvalidJump)
 				return
@@ -3258,12 +3261,13 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 					return
 				}
 				dest := int(target[0])
-				bc := bc
 				if dest >= bc.originalLen || bc.code[dest] != opcode.JUMPDEST {
 					interp.Halt(InstructionResultInvalidJump)
 					return
 				}
-				bc.ensureJumpTable()
+				if !bc.jumpTableReady {
+					bc.ensureJumpTable()
+				}
 				if bc.jumpTable[dest/8]&(1<<(uint(dest)%8)) == 0 {
 					interp.Halt(InstructionResultInvalidJump)
 					return

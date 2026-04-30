@@ -26,7 +26,9 @@ func opJump(interp *Interpreter) {
 		interp.Halt(InstructionResultInvalidJump)
 		return
 	}
-	bc.ensureJumpTable()
+	if !bc.jumpTableReady {
+		bc.ensureJumpTable()
+	}
 	if bc.jumpTable[dest/8]&(1<<(uint(dest)%8)) == 0 {
 		interp.Halt(InstructionResultInvalidJump)
 		return
@@ -55,7 +57,9 @@ func opJumpi(interp *Interpreter) {
 			interp.Halt(InstructionResultInvalidJump)
 			return
 		}
-		bc.ensureJumpTable()
+		if !bc.jumpTableReady {
+			bc.ensureJumpTable()
+		}
 		if bc.jumpTable[dest/8]&(1<<(uint(dest)%8)) == 0 {
 			interp.Halt(InstructionResultInvalidJump)
 			return

@@ -3,7 +3,10 @@ EEST_DIR := $(CURDIR)/tests/fixtures/execution-spec-tests
 EEST_FIXTURES := $(EEST_DIR)/fixtures
 EEST_VERSION := v5.4.0
 
-.PHONY: test test-unit test-spec eest-fixtures
+.PHONY: all test test-unit test-spec eest-fixtures
+
+# Run all tests, including EEST fixtures.
+all: test
 
 # Run all fixture tests (GeneralStateTests, BlockchainTests, TransactionTests, EEST)
 test: test-unit test-spec
