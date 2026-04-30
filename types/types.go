@@ -34,7 +34,7 @@ func (a *Address) IsZero() bool {
 func (a *Address) ToU256() uint256.Int {
 	var b [32]byte
 	copy(b[12:], a[:]) // Address occupies the low 20 bytes (left-padded with zeros)
-	return U256FromBytes32(b)
+	return *new(uint256.Int).SetBytes32(b[:])
 }
 
 // Hex returns the checksumless hex representation with 0x prefix.
@@ -81,7 +81,7 @@ func (b *B256) String() string {
 
 // ToU256 converts a B256 (big-endian) to uint256.Int.
 func (b *B256) ToU256() uint256.Int {
-	return U256FromBytes32(*b)
+	return *new(uint256.Int).SetBytes32(b[:])
 }
 
 // B256FromU256 converts a uint256.Int to B256 (big-endian).

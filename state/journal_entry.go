@@ -201,7 +201,7 @@ func (e *JournalEntry) Revert(state EvmState, transientStorage TransientStorage,
 			return
 		}
 		tkey := TransientKey{Address: e.Address, Key: e.Key}
-		if e.HadValue == types.U256Zero {
+		if e.HadValue == (uint256.Int{}) {
 			delete(transientStorage, tkey)
 		} else {
 			transientStorage[tkey] = e.HadValue

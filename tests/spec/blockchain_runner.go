@@ -127,13 +127,13 @@ func executeBlockchainTest(filePath, testName string, tc *BlockchainTestCase) (r
 	db := BuildMemDB(tc.Pre)
 
 	// Insert genesis block hash at block 0
-	genesisNum := types.U256AsUsize(&tc.GenesisBlockHeader.Number.V)
+	genesisNum := tc.GenesisBlockHeader.Number.V.Uint64()
 	db.InsertBlockHash(genesisNum, tc.GenesisBlockHeader.Hash.V)
 
 	// Create EVM
 	genesisBlockEnv := buildBlockchainBlockEnv(&tc.GenesisBlockHeader, forkID)
 	cfgEnv := host.CfgEnv{
-		ChainId: types.U256From(1), // mainnet
+		ChainId: *uint256.NewInt(1), // mainnet
 	}
 	evm := host.NewEvm(db, forkID, genesisBlockEnv, cfgEnv)
 
@@ -163,7 +163,7 @@ func executeBlockchainTest(filePath, testName string, tc *BlockchainTestCase) (r
 	parentBlockHash := tc.GenesisBlockHeader.Hash.V
 	parentExcessBlobGas := uint64(0)
 	if tc.GenesisBlockHeader.ExcessBlobGas != nil {
-		parentExcessBlobGas = types.U256AsUsize(&tc.GenesisBlockHeader.ExcessBlobGas.V)
+		parentExcessBlobGas = tc.GenesisBlockHeader.ExcessBlobGas.V.Uint64()
 	}
 
 	// Process each block
@@ -197,12 +197,12 @@ func executeBlockchainTest(filePath, testName string, tc *BlockchainTestCase) (r
 				fraction = blobBaseFeeUpdateFractionPrague
 			}
 			blobGasPrice := calcBlobGasPrice(parentExcessBlobGas, fraction)
-			blockEnv.BlobGasPrice = types.U256From(blobGasPrice)
+			blockEnv.BlobGasPrice = *uint256.NewInt(blobGasPrice)
 		}
 		evm.Block = blockEnv
 
 		if block.BlockHeader.ExcessBlobGas != nil {
-			v := types.U256AsUsize(&block.BlockHeader.ExcessBlobGas.V)
+			v := block.BlockHeader.ExcessBlobGas.V.Uint64()
 			thisExcessBlobGas = &v
 		}
 
@@ -212,7 +212,7 @@ func executeBlockchainTest(filePath, testName string, tc *BlockchainTestCase) (r
 		}
 
 		// Pre-block system calls (skip for block 0/genesis)
-		blockNum := types.U256AsUsize(&evm.Block.Number)
+		blockNum := evm.Block.Number.Uint64()
 		if blockNum > 0 {
 			// EIP-2935: historical block hashes (Prague+)
 			if forkID.IsEnabledIn(gevmspec.Prague) {
@@ -297,7 +297,7 @@ func buildBlockchainBlockEnv(hdr *BlockHeader, forkID gevmspec.ForkID) host.Bloc
 		prevrandao := hdr.MixHash.V.ToU256()
 		block.Prevrandao = &prevrandao
 	} else if forkID.IsEnabledIn(gevmspec.Merge) {
-		prevrandao := types.U256Zero
+		prevrandao := uint256.Int{}
 		block.Prevrandao = &prevrandao
 	}
 
@@ -317,15 +317,15 @@ func blockTxToTransaction(btx *BlockTx) (host.Transaction, error) {
 	tx := host.Transaction{
 		Caller:   btx.Sender.V,
 		Input:    btx.Data.V,
-		GasLimit: types.U256AsUsize(&btx.GasLimit.V),
+		GasLimit: btx.GasLimit.V.Uint64(),
 		Value:    btx.Value.V,
-		Nonce:    types.U256AsUsize(&btx.Nonce.V),
+		Nonce:    btx.Nonce.V.Uint64(),
 	}
 
 	// Determine tx type
 	txType := host.TxTypeLegacy
 	if btx.Type != nil {
-		switch types.U256AsUsize(&btx.Type.V) {
+		switch btx.Type.V.Uint64() {
 		case 1:
 			txType = host.TxTypeEIP2930
 		case 2:
@@ -412,7 +412,7 @@ func executeSystemCall(evm *host.Evm, target types.Address, data []byte) {
 		BytecodeAddress:    target,
 		TargetAddress:      target,
 		Caller:             systemAddress,
-		Value:              vm.NewCallValueTransfer(types.U256Zero),
+		Value:              vm.NewCallValueTransfer(uint256.Int{}),
 		Scheme:             vm.CallSchemeCall,
 		IsStatic:           false,
 	})
@@ -429,17 +429,18 @@ func postBlockTransition(evm *host.Evm, block *BlockData, forkID gevmspec.ForkID
 	// Block rewards (pre-Merge)
 	reward := blockReward(forkID)
 	if reward > 0 {
-		rewardU256 := types.U256From(reward)
+		rewardU256 := *uint256.NewInt(reward)
 		evm.Journal.BalanceIncr(evm.Block.Beneficiary, rewardU256)
 	}
 
 	// Withdrawals (Shanghai+, EIP-4895)
 	if forkID.IsEnabledIn(gevmspec.Shanghai) {
 		for _, w := range block.Withdrawals {
-			amount := types.U256AsUsize(&w.Amount.V)
-			amountU := types.U256From(amount)
-			gweiU := types.U256From(oneGwei)
-			amountWei := types.Mul(&amountU, &gweiU)
+			amount := w.Amount.V.Uint64()
+			amountU := *uint256.NewInt(amount)
+			gweiU := *uint256.NewInt(oneGwei)
+			var amountWei uint256.Int
+			amountWei.Mul(&amountU, &gweiU)
 			evm.Journal.BalanceIncr(w.Address.V, amountWei)
 		}
 	}
@@ -531,7 +532,7 @@ func validatePostState(journal *state.Journal, expected map[HexAddr]*TestAccount
 
 		// Validate expected storage slots
 		for slot, expectedVal := range expectedStorage {
-			actual := types.U256Zero
+			actual := uint256.Int{}
 
 			// Check journal state first
 			if acc.Storage != nil {

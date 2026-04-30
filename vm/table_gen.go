@@ -5,13 +5,12 @@ package vm
 import (
 	"github.com/Giulio2002/gevm/opcode"
 	"github.com/Giulio2002/gevm/spec"
-	"github.com/Giulio2002/gevm/types"
 	"github.com/holiman/uint256"
 )
 
 // Ensure imports are used.
 var (
-	_ = types.U256Zero
+	_ = uint256.Int{}
 	_ = spec.GasVerylow
 	_ = opcode.STOP
 )
@@ -55,7 +54,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 			} else {
 				s.top--
 
-				types.AddTo(&s.data[s.top-1], &s.data[s.top], &s.data[s.top-1])
+				s.data[s.top-1].Add(&s.data[s.top], &s.data[s.top-1])
 
 			}
 		case opcode.MUL:
@@ -91,7 +90,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 			} else {
 				s.top--
 
-				types.SubTo(&s.data[s.top-1], &s.data[s.top], &s.data[s.top-1])
+				s.data[s.top-1].Sub(&s.data[s.top], &s.data[s.top-1])
 
 			}
 		case opcode.DIV:
@@ -110,7 +109,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 
 				a := s.data[s.top]
 				top := &s.data[s.top-1]
-				if !types.IsZeroPtr(top) {
+				if !top.IsZero() {
 					top.Div(&a, top)
 				}
 
@@ -131,7 +130,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 
 				a := s.data[s.top]
 				top := &s.data[s.top-1]
-				*top = types.SDiv(a, *top)
+				top.SDiv(&a, top)
 
 			}
 		case opcode.MOD:
@@ -150,7 +149,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 
 				a := s.data[s.top]
 				top := &s.data[s.top-1]
-				if !types.IsZeroPtr(top) {
+				if !top.IsZero() {
 					top.Mod(&a, top)
 				}
 
@@ -171,7 +170,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 
 				a := s.data[s.top]
 				top := &s.data[s.top-1]
-				*top = types.SMod(a, *top)
+				top.SMod(&a, top)
 
 			}
 		case opcode.ADDMOD:
@@ -239,7 +238,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 
 				ext := s.data[s.top]
 				top := &s.data[s.top-1]
-				*top = types.SignExtend(ext, *top)
+				top.ExtendSign(top, &ext)
 
 			}
 		case opcode.LT:
@@ -256,10 +255,10 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 			} else {
 				s.top--
 
-				if types.LtPtr(&s.data[s.top], &s.data[s.top-1]) {
-					s.data[s.top-1] = types.U256One
+				if s.data[s.top].Lt(&s.data[s.top-1]) {
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 				} else {
-					s.data[s.top-1] = types.U256Zero
+					s.data[s.top-1] = uint256.Int{}
 				}
 
 			}
@@ -277,10 +276,10 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 			} else {
 				s.top--
 
-				if types.GtPtr(&s.data[s.top], &s.data[s.top-1]) {
-					s.data[s.top-1] = types.U256One
+				if s.data[s.top].Gt(&s.data[s.top-1]) {
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 				} else {
-					s.data[s.top-1] = types.U256Zero
+					s.data[s.top-1] = uint256.Int{}
 				}
 
 			}
@@ -306,12 +305,12 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 				if aNeg != bNeg {
 					lt = aNeg > bNeg
 				} else {
-					lt = types.LtPtr(a, b)
+					lt = a.Lt(b)
 				}
 				if lt {
-					s.data[s.top-1] = types.U256One
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 				} else {
-					s.data[s.top-1] = types.U256Zero
+					s.data[s.top-1] = uint256.Int{}
 				}
 
 			}
@@ -337,12 +336,12 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 				if aNeg != bNeg {
 					gt = bNeg > aNeg
 				} else {
-					gt = types.GtPtr(a, b)
+					gt = a.Gt(b)
 				}
 				if gt {
-					s.data[s.top-1] = types.U256One
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 				} else {
-					s.data[s.top-1] = types.U256Zero
+					s.data[s.top-1] = uint256.Int{}
 				}
 
 			}
@@ -360,10 +359,10 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 			} else {
 				s.top--
 
-				if types.EqPtr(&s.data[s.top], &s.data[s.top-1]) {
-					s.data[s.top-1] = types.U256One
+				if s.data[s.top].Eq(&s.data[s.top-1]) {
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 				} else {
-					s.data[s.top-1] = types.U256Zero
+					s.data[s.top-1] = uint256.Int{}
 				}
 
 			}
@@ -380,10 +379,10 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 				interp.HaltUnderflow()
 			} else {
 
-				if types.IsZeroPtr(&s.data[s.top-1]) {
-					s.data[s.top-1] = types.U256One
+				if s.data[s.top-1].IsZero() {
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 				} else {
-					s.data[s.top-1] = types.U256Zero
+					s.data[s.top-1] = uint256.Int{}
 				}
 
 			}
@@ -401,7 +400,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 			} else {
 				s.top--
 
-				types.AndTo(&s.data[s.top-1], &s.data[s.top], &s.data[s.top-1])
+				s.data[s.top-1].And(&s.data[s.top], &s.data[s.top-1])
 
 			}
 		case opcode.OR:
@@ -418,7 +417,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 			} else {
 				s.top--
 
-				types.OrTo(&s.data[s.top-1], &s.data[s.top], &s.data[s.top-1])
+				s.data[s.top-1].Or(&s.data[s.top], &s.data[s.top-1])
 
 			}
 		case opcode.XOR:
@@ -435,7 +434,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 			} else {
 				s.top--
 
-				types.XorTo(&s.data[s.top-1], &s.data[s.top], &s.data[s.top-1])
+				s.data[s.top-1].Xor(&s.data[s.top], &s.data[s.top-1])
 
 			}
 		case opcode.NOT:
@@ -451,7 +450,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 				interp.HaltUnderflow()
 			} else {
 
-				types.NotTo(&s.data[s.top-1], &s.data[s.top-1])
+				s.data[s.top-1].Not(&s.data[s.top-1])
 
 			}
 		case opcode.BYTE:
@@ -470,11 +469,12 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 
 				a := s.data[s.top]
 				top := &s.data[s.top-1]
-				idx := types.U256AsUsizeSaturated(&a)
-				if idx < 32 {
-					*top = types.U256From(uint64(types.U256ByteBE(top, uint(idx))))
+				idx, overflow := a.Uint64WithOverflow()
+				if !overflow && idx < 32 {
+					index := *uint256.NewInt(idx)
+					top.Byte(&index)
 				} else {
-					*top = types.U256Zero
+					*top = uint256.Int{}
 				}
 
 			}
@@ -503,11 +503,11 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 
 					shift := s.data[s.top]
 					top := &s.data[s.top-1]
-					sa := types.U256AsUsizeSaturated(&shift)
-					if sa < 256 {
+					sa, overflow := shift.Uint64WithOverflow()
+					if !overflow && sa < 256 {
 						top.Lsh(top, uint(sa))
 					} else {
-						*top = types.U256Zero
+						*top = uint256.Int{}
 					}
 
 				}
@@ -537,11 +537,11 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 
 					shift := s.data[s.top]
 					top := &s.data[s.top-1]
-					sa := types.U256AsUsizeSaturated(&shift)
-					if sa < 256 {
+					sa, overflow := shift.Uint64WithOverflow()
+					if !overflow && sa < 256 {
 						top.Rsh(top, uint(sa))
 					} else {
-						*top = types.U256Zero
+						*top = uint256.Int{}
 					}
 
 				}
@@ -571,13 +571,13 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 
 					shift := s.data[s.top]
 					top := &s.data[s.top-1]
-					sa := types.U256AsUsizeSaturated(&shift)
-					if sa < 256 {
+					sa, overflow := shift.Uint64WithOverflow()
+					if !overflow && sa < 256 {
 						top.SRsh(top, uint(sa))
-					} else if types.U256Bit(top, 255) {
-						*top = types.U256Max
+					} else if top[3]&(1<<63) != 0 {
+						*top = uint256.Int{^uint64(0), ^uint64(0), ^uint64(0), ^uint64(0)}
 					} else {
-						*top = types.U256Zero
+						*top = uint256.Int{}
 					}
 
 				}
@@ -605,7 +605,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 				} else {
 
 					top := &s.data[s.top-1]
-					*top = types.U256From(uint64(types.U256LeadingZeros(top)))
+					*top = *uint256.NewInt(uint64(256 - top.BitLen()))
 
 				}
 			}
@@ -710,7 +710,10 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 			} else {
 
 				top := &s.data[s.top-1]
-				offset := types.U256AsUsizeSaturated(top)
+				offset, overflow := top.Uint64WithOverflow()
+				if overflow {
+					offset = ^uint64(0)
+				}
 				input := interp.Input.Input
 				var word [32]byte
 				if offset < uint64(len(input)) {
@@ -721,7 +724,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 						copy(word[:], src)
 					}
 				}
-				*top = types.U256FromBytes32(word)
+				*top = *new(uint256.Int).SetBytes32((word)[:])
 
 			}
 		case opcode.CALLDATASIZE:
@@ -737,7 +740,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 				interp.HaltOverflow()
 			} else {
 
-				s.data[s.top] = types.U256From(uint64(len(interp.Input.Input)))
+				s.data[s.top] = *uint256.NewInt(uint64(len(interp.Input.Input)))
 				s.top++
 
 			}
@@ -763,7 +766,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 				interp.HaltOverflow()
 			} else {
 
-				s.data[s.top] = types.U256From(uint64(bc.originalLen))
+				s.data[s.top] = *uint256.NewInt(uint64(bc.originalLen))
 				s.top++
 
 			}
@@ -833,7 +836,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 					interp.HaltOverflow()
 				} else {
 
-					s.data[s.top] = types.U256From(uint64(len(interp.ReturnData)))
+					s.data[s.top] = *uint256.NewInt(uint64(len(interp.ReturnData)))
 					s.top++
 
 				}
@@ -1274,7 +1277,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 				interp.HaltOverflow()
 			} else {
 
-				s.data[s.top] = types.U256From(uint64(bc.pc - 1))
+				s.data[s.top] = *uint256.NewInt(uint64(bc.pc - 1))
 				s.top++
 
 			}
@@ -1291,7 +1294,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 				interp.HaltOverflow()
 			} else {
 
-				s.data[s.top] = types.U256From(uint64(interp.Memory.Len()))
+				s.data[s.top] = *uint256.NewInt(uint64(interp.Memory.Len()))
 				s.top++
 
 			}
@@ -1515,7 +1518,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 					interp.HaltOverflow()
 				} else {
 
-					s.data[s.top] = types.U256Zero
+					s.data[s.top] = uint256.Int{}
 					s.top++
 
 				}
@@ -1666,7 +1669,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 				interp.HaltOverflow()
 			} else {
 				n := int(op - opcode.PUSH0)
-				s.data[s.top] = types.U256FromBytes(bc.code[bc.pc : bc.pc+n])
+				s.data[s.top] = *new(uint256.Int).SetBytes(bc.code[bc.pc : bc.pc+n])
 				bc.pc += n
 				s.top++
 			}
@@ -2246,7 +2249,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 			} else {
 				s.top--
 
-				types.AddTo(&s.data[s.top-1], &s.data[s.top], &s.data[s.top-1])
+				s.data[s.top-1].Add(&s.data[s.top], &s.data[s.top-1])
 
 			}
 		case opcode.MUL:
@@ -2278,7 +2281,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 			} else {
 				s.top--
 
-				types.SubTo(&s.data[s.top-1], &s.data[s.top], &s.data[s.top-1])
+				s.data[s.top-1].Sub(&s.data[s.top], &s.data[s.top-1])
 
 			}
 		case opcode.DIV:
@@ -2295,7 +2298,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 
 				a := s.data[s.top]
 				top := &s.data[s.top-1]
-				if !types.IsZeroPtr(top) {
+				if !top.IsZero() {
 					top.Div(&a, top)
 				}
 
@@ -2314,7 +2317,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 
 				a := s.data[s.top]
 				top := &s.data[s.top-1]
-				*top = types.SDiv(a, *top)
+				top.SDiv(&a, top)
 
 			}
 		case opcode.MOD:
@@ -2331,7 +2334,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 
 				a := s.data[s.top]
 				top := &s.data[s.top-1]
-				if !types.IsZeroPtr(top) {
+				if !top.IsZero() {
 					top.Mod(&a, top)
 				}
 
@@ -2350,7 +2353,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 
 				a := s.data[s.top]
 				top := &s.data[s.top-1]
-				*top = types.SMod(a, *top)
+				top.SMod(&a, top)
 
 			}
 		case opcode.ADDMOD:
@@ -2410,7 +2413,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 
 				ext := s.data[s.top]
 				top := &s.data[s.top-1]
-				*top = types.SignExtend(ext, *top)
+				top.ExtendSign(top, &ext)
 
 			}
 		case opcode.LT:
@@ -2425,10 +2428,10 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 			} else {
 				s.top--
 
-				if types.LtPtr(&s.data[s.top], &s.data[s.top-1]) {
-					s.data[s.top-1] = types.U256One
+				if s.data[s.top].Lt(&s.data[s.top-1]) {
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 				} else {
-					s.data[s.top-1] = types.U256Zero
+					s.data[s.top-1] = uint256.Int{}
 				}
 
 			}
@@ -2444,10 +2447,10 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 			} else {
 				s.top--
 
-				if types.GtPtr(&s.data[s.top], &s.data[s.top-1]) {
-					s.data[s.top-1] = types.U256One
+				if s.data[s.top].Gt(&s.data[s.top-1]) {
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 				} else {
-					s.data[s.top-1] = types.U256Zero
+					s.data[s.top-1] = uint256.Int{}
 				}
 
 			}
@@ -2471,12 +2474,12 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 				if aNeg != bNeg {
 					lt = aNeg > bNeg
 				} else {
-					lt = types.LtPtr(a, b)
+					lt = a.Lt(b)
 				}
 				if lt {
-					s.data[s.top-1] = types.U256One
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 				} else {
-					s.data[s.top-1] = types.U256Zero
+					s.data[s.top-1] = uint256.Int{}
 				}
 
 			}
@@ -2500,12 +2503,12 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 				if aNeg != bNeg {
 					gt = bNeg > aNeg
 				} else {
-					gt = types.GtPtr(a, b)
+					gt = a.Gt(b)
 				}
 				if gt {
-					s.data[s.top-1] = types.U256One
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 				} else {
-					s.data[s.top-1] = types.U256Zero
+					s.data[s.top-1] = uint256.Int{}
 				}
 
 			}
@@ -2521,10 +2524,10 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 			} else {
 				s.top--
 
-				if types.EqPtr(&s.data[s.top], &s.data[s.top-1]) {
-					s.data[s.top-1] = types.U256One
+				if s.data[s.top].Eq(&s.data[s.top-1]) {
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 				} else {
-					s.data[s.top-1] = types.U256Zero
+					s.data[s.top-1] = uint256.Int{}
 				}
 
 			}
@@ -2539,10 +2542,10 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 				interp.HaltUnderflow()
 			} else {
 
-				if types.IsZeroPtr(&s.data[s.top-1]) {
-					s.data[s.top-1] = types.U256One
+				if s.data[s.top-1].IsZero() {
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 				} else {
-					s.data[s.top-1] = types.U256Zero
+					s.data[s.top-1] = uint256.Int{}
 				}
 
 			}
@@ -2558,7 +2561,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 			} else {
 				s.top--
 
-				types.AndTo(&s.data[s.top-1], &s.data[s.top], &s.data[s.top-1])
+				s.data[s.top-1].And(&s.data[s.top], &s.data[s.top-1])
 
 			}
 		case opcode.OR:
@@ -2573,7 +2576,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 			} else {
 				s.top--
 
-				types.OrTo(&s.data[s.top-1], &s.data[s.top], &s.data[s.top-1])
+				s.data[s.top-1].Or(&s.data[s.top], &s.data[s.top-1])
 
 			}
 		case opcode.XOR:
@@ -2588,7 +2591,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 			} else {
 				s.top--
 
-				types.XorTo(&s.data[s.top-1], &s.data[s.top], &s.data[s.top-1])
+				s.data[s.top-1].Xor(&s.data[s.top], &s.data[s.top-1])
 
 			}
 		case opcode.NOT:
@@ -2602,7 +2605,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 				interp.HaltUnderflow()
 			} else {
 
-				types.NotTo(&s.data[s.top-1], &s.data[s.top-1])
+				s.data[s.top-1].Not(&s.data[s.top-1])
 
 			}
 		case opcode.BYTE:
@@ -2619,11 +2622,12 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 
 				a := s.data[s.top]
 				top := &s.data[s.top-1]
-				idx := types.U256AsUsizeSaturated(&a)
-				if idx < 32 {
-					*top = types.U256From(uint64(types.U256ByteBE(top, uint(idx))))
+				idx, overflow := a.Uint64WithOverflow()
+				if !overflow && idx < 32 {
+					index := *uint256.NewInt(idx)
+					top.Byte(&index)
 				} else {
-					*top = types.U256Zero
+					*top = uint256.Int{}
 				}
 
 			}
@@ -2644,11 +2648,11 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 
 					shift := s.data[s.top]
 					top := &s.data[s.top-1]
-					sa := types.U256AsUsizeSaturated(&shift)
-					if sa < 256 {
+					sa, overflow := shift.Uint64WithOverflow()
+					if !overflow && sa < 256 {
 						top.Lsh(top, uint(sa))
 					} else {
-						*top = types.U256Zero
+						*top = uint256.Int{}
 					}
 
 				}
@@ -2670,11 +2674,11 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 
 					shift := s.data[s.top]
 					top := &s.data[s.top-1]
-					sa := types.U256AsUsizeSaturated(&shift)
-					if sa < 256 {
+					sa, overflow := shift.Uint64WithOverflow()
+					if !overflow && sa < 256 {
 						top.Rsh(top, uint(sa))
 					} else {
-						*top = types.U256Zero
+						*top = uint256.Int{}
 					}
 
 				}
@@ -2696,13 +2700,13 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 
 					shift := s.data[s.top]
 					top := &s.data[s.top-1]
-					sa := types.U256AsUsizeSaturated(&shift)
-					if sa < 256 {
+					sa, overflow := shift.Uint64WithOverflow()
+					if !overflow && sa < 256 {
 						top.SRsh(top, uint(sa))
-					} else if types.U256Bit(top, 255) {
-						*top = types.U256Max
+					} else if top[3]&(1<<63) != 0 {
+						*top = uint256.Int{^uint64(0), ^uint64(0), ^uint64(0), ^uint64(0)}
 					} else {
-						*top = types.U256Zero
+						*top = uint256.Int{}
 					}
 
 				}
@@ -2722,7 +2726,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 				} else {
 
 					top := &s.data[s.top-1]
-					*top = types.U256From(uint64(types.U256LeadingZeros(top)))
+					*top = *uint256.NewInt(uint64(256 - top.BitLen()))
 
 				}
 			}
@@ -2813,7 +2817,10 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 			} else {
 
 				top := &s.data[s.top-1]
-				offset := types.U256AsUsizeSaturated(top)
+				offset, overflow := top.Uint64WithOverflow()
+				if overflow {
+					offset = ^uint64(0)
+				}
 				input := interp.Input.Input
 				var word [32]byte
 				if offset < uint64(len(input)) {
@@ -2824,7 +2831,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 						copy(word[:], src)
 					}
 				}
-				*top = types.U256FromBytes32(word)
+				*top = *new(uint256.Int).SetBytes32((word)[:])
 
 			}
 		case opcode.CALLDATASIZE:
@@ -2838,7 +2845,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 				interp.HaltOverflow()
 			} else {
 
-				s.data[s.top] = types.U256From(uint64(len(interp.Input.Input)))
+				s.data[s.top] = *uint256.NewInt(uint64(len(interp.Input.Input)))
 				s.top++
 
 			}
@@ -2860,7 +2867,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 				interp.HaltOverflow()
 			} else {
 
-				s.data[s.top] = types.U256From(uint64(bc.originalLen))
+				s.data[s.top] = *uint256.NewInt(uint64(bc.originalLen))
 				s.top++
 
 			}
@@ -2914,7 +2921,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 					interp.HaltOverflow()
 				} else {
 
-					s.data[s.top] = types.U256From(uint64(len(interp.ReturnData)))
+					s.data[s.top] = *uint256.NewInt(uint64(len(interp.ReturnData)))
 					s.top++
 
 				}
@@ -3275,7 +3282,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 				interp.HaltOverflow()
 			} else {
 
-				s.data[s.top] = types.U256From(uint64(bc.pc - 1))
+				s.data[s.top] = *uint256.NewInt(uint64(bc.pc - 1))
 				s.top++
 
 			}
@@ -3290,7 +3297,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 				interp.HaltOverflow()
 			} else {
 
-				s.data[s.top] = types.U256From(uint64(interp.Memory.Len()))
+				s.data[s.top] = *uint256.NewInt(uint64(interp.Memory.Len()))
 				s.top++
 
 			}
@@ -3450,7 +3457,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 					interp.HaltOverflow()
 				} else {
 
-					s.data[s.top] = types.U256Zero
+					s.data[s.top] = uint256.Int{}
 					s.top++
 
 				}
@@ -3587,7 +3594,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 				interp.HaltOverflow()
 			} else {
 				n := int(op - opcode.PUSH0)
-				s.data[s.top] = types.U256FromBytes(bc.code[bc.pc : bc.pc+n])
+				s.data[s.top] = *new(uint256.Int).SetBytes(bc.code[bc.pc : bc.pc+n])
 				bc.pc += n
 				s.top++
 			}

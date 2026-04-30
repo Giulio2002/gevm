@@ -88,7 +88,7 @@ func (h *EvmHost) BlobHash(index int) *uint256.Int {
 func (h *EvmHost) Balance(addr types.Address) (uint256.Int, bool) {
 	result, err := h.Journal.LoadAccount(addr)
 	if err != nil {
-		return types.U256Zero, false
+		return uint256.Int{}, false
 	}
 	return result.Data.Info.Balance, result.IsCold
 }
@@ -173,7 +173,7 @@ func (h *EvmHost) SelfBalance(addr types.Address) uint256.Int {
 	if acc, ok := h.Journal.State[addr]; ok {
 		return acc.Info.Balance
 	}
-	return types.U256Zero
+	return uint256.Int{}
 }
 
 // --- Storage access ---
@@ -181,7 +181,7 @@ func (h *EvmHost) SelfBalance(addr types.Address) uint256.Int {
 func (h *EvmHost) SLoadInto(addr types.Address, key *uint256.Int, out *uint256.Int) bool {
 	isCold, err := h.Journal.SLoadInto(addr, key, out)
 	if err != nil {
-		*out = types.U256Zero
+		*out = uint256.Int{}
 		return false
 	}
 	return isCold

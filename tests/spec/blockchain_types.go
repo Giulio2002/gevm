@@ -6,7 +6,6 @@ import (
 	"github.com/holiman/uint256"
 
 	gevmspec "github.com/Giulio2002/gevm/spec"
-	"github.com/Giulio2002/gevm/types"
 )
 
 // BlockchainTestSuite is the top-level map: test name -> BlockchainTestCase.
@@ -162,5 +161,5 @@ func BlockHeaderToBlockEnv(hdr *BlockHeader, forkID gevmspec.ForkID) uint256.Int
 	if hdr.ExcessBlobGas != nil {
 		return hdr.ExcessBlobGas.V
 	}
-	return types.U256Zero
+	return uint256.Int{}
 }

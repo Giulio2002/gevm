@@ -165,7 +165,7 @@ func decodeLegacyTx(items []RlpItem) (*DecodedTx, error) {
 	// Derive chainId from V for EIP-155
 	// Legacy pre-EIP-155: V = 27 or 28
 	// EIP-155: V = 2*chainId + 35 + {0,1}
-	vU64 := types.U256AsUsize(&tx.V)
+	vU64 := tx.V.Uint64()
 	if vU64 != 27 && vU64 != 28 {
 		// EIP-155
 		if vU64 >= 35 {
@@ -518,7 +518,7 @@ func SigningHash(tx *DecodedTx) types.B256 {
 // legacySigningHash computes the signing hash for legacy transactions.
 func legacySigningHash(tx *DecodedTx) types.B256 {
 	// Determine if EIP-155 from V
-	vU64 := types.U256AsUsize(&tx.V)
+	vU64 := tx.V.Uint64()
 
 	var items [][]byte
 
@@ -650,7 +650,7 @@ func RecoverSender(tx *DecodedTx) (types.Address, error) {
 	switch tx.TxType {
 	case 0:
 		// Legacy: V=27/28 (pre-EIP-155) or V=2*chainId+35+{0,1} (EIP-155)
-		vU64 := types.U256AsUsize(&tx.V)
+		vU64 := tx.V.Uint64()
 		if vU64 == 27 || vU64 == 28 {
 			recid = byte(vU64 - 27)
 		} else if vU64 >= 35 {
@@ -660,7 +660,7 @@ func RecoverSender(tx *DecodedTx) (types.Address, error) {
 		}
 	case 1, 2, 3:
 		// Typed txs: V is the yParity (0 or 1)
-		vU64 := types.U256AsUsize(&tx.V)
+		vU64 := tx.V.Uint64()
 		if vU64 > 1 {
 			return types.AddressZero, fmt.Errorf("invalid yParity: %d", vU64)
 		}

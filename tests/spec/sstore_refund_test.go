@@ -21,26 +21,26 @@ func TestSstoreRefundBasic(t *testing.T) {
 
 	db := NewMemDB()
 	db.InsertAccount(caller, state.AccountInfo{
-		Balance:  types.U256From(1_000_000_000),
+		Balance:  *uint256.NewInt(1_000_000_000),
 		Nonce:    0,
 		CodeHash: types.KeccakEmpty,
 	}, nil)
 	db.InsertAccount(target, state.AccountInfo{
-		Balance:  types.U256Zero,
+		Balance:  uint256.Int{},
 		Nonce:    0,
 		CodeHash: types.Keccak256(code),
 		Code:     code,
 	}, map[uint256.Int]uint256.Int{
-		types.U256Zero: types.U256From(1),
+		uint256.Int{}: *uint256.NewInt(1),
 	})
 
 	forkID := gevmspec.Cancun
 	blockEnv := host.BlockEnv{
-		Number:   types.U256From(1),
-		GasLimit: types.U256From(1_000_000),
-		BaseFee:  types.U256From(1),
+		Number:   *uint256.NewInt(1),
+		GasLimit: *uint256.NewInt(1_000_000),
+		BaseFee:  *uint256.NewInt(1),
 	}
-	cfgEnv := host.CfgEnv{ChainId: types.U256From(1)}
+	cfgEnv := host.CfgEnv{ChainId: *uint256.NewInt(1)}
 
 	evm := host.NewEvm(db, forkID, blockEnv, cfgEnv)
 	tx := host.Transaction{
@@ -48,10 +48,10 @@ func TestSstoreRefundBasic(t *testing.T) {
 		TxType:   host.TxTypeLegacy,
 		Caller:   caller,
 		To:       target,
-		Value:    types.U256Zero,
+		Value:    uint256.Int{},
 		Input:    nil,
 		GasLimit: 100_000,
-		GasPrice: types.U256From(1),
+		GasPrice: *uint256.NewInt(1),
 		Nonce:    0,
 	}
 
@@ -93,35 +93,35 @@ func TestSstoreRefundAfterSubcall(t *testing.T) {
 
 	db := NewMemDB()
 	db.InsertAccount(caller, state.AccountInfo{
-		Balance:  types.U256From(1_000_000_000),
+		Balance:  *uint256.NewInt(1_000_000_000),
 		Nonce:    0,
 		CodeHash: types.KeccakEmpty,
 	}, nil)
 	db.InsertAccount(dispatcher, state.AccountInfo{
-		Balance:  types.U256Zero,
+		Balance:  uint256.Int{},
 		Nonce:    0,
 		CodeHash: types.Keccak256(dispatcherCode),
 		Code:     dispatcherCode,
 	}, map[uint256.Int]uint256.Int{
-		types.U256Zero: types.U256From(1),
+		uint256.Int{}: *uint256.NewInt(1),
 	})
 	db.InsertAccount(callee, state.AccountInfo{
-		Balance:  types.U256Zero,
+		Balance:  uint256.Int{},
 		Nonce:    0,
 		CodeHash: types.Keccak256(calleeCode),
 		Code:     calleeCode,
 	}, nil)
 
 	evm := host.NewEvm(db, gevmspec.Cancun, host.BlockEnv{
-		Number:   types.U256From(1),
-		GasLimit: types.U256From(1_000_000),
-		BaseFee:  types.U256From(1),
-	}, host.CfgEnv{ChainId: types.U256From(1)})
+		Number:   *uint256.NewInt(1),
+		GasLimit: *uint256.NewInt(1_000_000),
+		BaseFee:  *uint256.NewInt(1),
+	}, host.CfgEnv{ChainId: *uint256.NewInt(1)})
 
 	result := evm.Transact(&host.Transaction{
 		Kind: host.TxKindCall, TxType: host.TxTypeLegacy,
 		Caller: caller, To: dispatcher,
-		GasLimit: 200_000, GasPrice: types.U256From(1),
+		GasLimit: 200_000, GasPrice: *uint256.NewInt(1),
 	})
 
 	if result.Kind != host.ResultSuccess {

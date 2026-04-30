@@ -41,30 +41,30 @@ var (
 )
 
 // hugeBalance is a large balance to fund the caller.
-var hugeBalance = types.U256FromLimbs(0, 0, 1, 0) // ~2^128
+var hugeBalance = uint256.Int{0, 0, 1, 0} // ~2^128
 
 func blockEnvForSpec(forkID spec.ForkID) host.BlockEnv {
 	env := host.BlockEnv{
 		Beneficiary: benchCoinbase,
-		GasLimit:    types.U256From(1_000_000_000),
-		BaseFee:     types.U256From(1),
-		Number:      types.U256From(1),
-		Timestamp:   types.U256From(1000),
+		GasLimit:    *uint256.NewInt(1_000_000_000),
+		BaseFee:     *uint256.NewInt(1),
+		Number:      *uint256.NewInt(1),
+		Timestamp:   *uint256.NewInt(1000),
 	}
 	// Prevrandao required for Merge+
 	if forkID.IsEnabledIn(spec.Merge) {
-		prevrandao := types.U256Zero
+		prevrandao := uint256.Int{}
 		env.Prevrandao = &prevrandao
 	}
 	// Pre-London specs don't have BaseFee; set to zero to avoid validation failures
 	if !forkID.IsEnabledIn(spec.London) {
-		env.BaseFee = types.U256Zero
+		env.BaseFee = uint256.Int{}
 	}
 	return env
 }
 
 func defaultCfgEnv() host.CfgEnv {
-	return host.CfgEnv{ChainId: types.U256From(1)}
+	return host.CfgEnv{ChainId: *uint256.NewInt(1)}
 }
 
 // newBenchDB creates a fresh MemDB with a funded caller account.
@@ -107,7 +107,7 @@ func benchmarkCodeRunner(b *testing.B, forkID spec.ForkID, gasLimit uint64, cont
 			Caller:   benchCaller,
 			To:       benchContract,
 			GasLimit: gasLimit,
-			GasPrice: types.U256From(1),
+			GasPrice: *uint256.NewInt(1),
 		})
 		evm.ReleaseEvm()
 	}
@@ -152,7 +152,7 @@ func benchmarkNonModifyingCode(b *testing.B, gasLimit uint64, contractCode []byt
 			Caller:   benchCaller,
 			To:       benchContract,
 			GasLimit: gasLimit,
-			GasPrice: types.U256From(1),
+			GasPrice: *uint256.NewInt(1),
 		})
 		evm.ReleaseEvm()
 	}
@@ -335,7 +335,7 @@ func BenchmarkTransfer(b *testing.B) {
 	db := newBenchDB()
 	// Target account exists with some balance.
 	db.InsertAccount(benchContract, state.AccountInfo{
-		Balance:  types.U256From(1_000_000),
+		Balance:  *uint256.NewInt(1_000_000),
 		CodeHash: types.KeccakEmpty,
 	}, nil)
 
@@ -349,8 +349,8 @@ func BenchmarkTransfer(b *testing.B) {
 			Caller:   benchCaller,
 			To:       benchContract,
 			GasLimit: 21_000,
-			GasPrice: types.U256From(1),
-			Value:    types.U256From(1),
+			GasPrice: *uint256.NewInt(1),
+			Value:    *uint256.NewInt(1),
 		})
 		evm.ReleaseEvm()
 	}
@@ -382,7 +382,7 @@ func BenchmarkAnalysis(b *testing.B) {
 			Caller:   benchCaller,
 			To:       benchContract,
 			GasLimit: 1_000_000,
-			GasPrice: types.U256From(1),
+			GasPrice: *uint256.NewInt(1),
 			Input:    calldata,
 		})
 		evm.ReleaseEvm()
@@ -415,7 +415,7 @@ func BenchmarkSnailtracer(b *testing.B) {
 			Caller:   benchCaller,
 			To:       benchContract,
 			GasLimit: 1_000_000_000,
-			GasPrice: types.U256From(1),
+			GasPrice: *uint256.NewInt(1),
 			Input:    calldata,
 		})
 		evm.ReleaseEvm()
@@ -437,11 +437,11 @@ func BenchmarkERC20Transfer(b *testing.B) {
 	//
 	// balances[addr] is at keccak256(abi.encode(addr, 1))
 	callerSlot := solidityMappingSlot(benchCaller, 1)
-	largeBalance := types.U256FromLimbs(0, 0, 1, 0) // ~2^128
+	largeBalance := uint256.Int{0, 0, 1, 0} // ~2^128
 
 	storage := map[uint256.Int]uint256.Int{
 		// totalSupply
-		types.U256From(0): largeBalance,
+		*uint256.NewInt(0): largeBalance,
 		// balances[benchCaller]
 		callerSlot: largeBalance,
 	}
@@ -471,7 +471,7 @@ func BenchmarkERC20Transfer(b *testing.B) {
 			Caller:   benchCaller,
 			To:       benchContract,
 			GasLimit: 100_000,
-			GasPrice: types.U256From(1),
+			GasPrice: *uint256.NewInt(1),
 			Input:    calldata,
 		})
 		evm.ReleaseEvm()
@@ -487,10 +487,10 @@ func BenchmarkTxType(b *testing.B) {
 
 	callerSlot := solidityMappingSlot(benchCaller, 1)
 	recipientSlot := solidityMappingSlot(benchEOA, 1)
-	largeBalance := types.U256FromLimbs(0, 0, 1, 0)
+	largeBalance := uint256.Int{0, 0, 1, 0}
 
 	storage := map[uint256.Int]uint256.Int{
-		types.U256From(0): largeBalance,
+		*uint256.NewInt(0): largeBalance,
 		callerSlot:        largeBalance,
 	}
 
@@ -522,7 +522,7 @@ func BenchmarkTxType(b *testing.B) {
 				Caller:   benchCaller,
 				To:       benchContract,
 				GasLimit: 100_000,
-				GasPrice: types.U256From(1),
+				GasPrice: *uint256.NewInt(1),
 				Input:    calldata,
 			})
 			evm.ReleaseEvm()
@@ -542,7 +542,7 @@ func BenchmarkTxType(b *testing.B) {
 				Caller:   benchCaller,
 				To:       benchContract,
 				GasLimit: 100_000,
-				GasPrice: types.U256From(1),
+				GasPrice: *uint256.NewInt(1),
 				Input:    calldata,
 				AccessList: []host.AccessListItem{
 					{Address: benchContract, StorageKeys: []uint256.Int{callerSlot, recipientSlot}},
@@ -565,8 +565,8 @@ func BenchmarkTxType(b *testing.B) {
 				Caller:               benchCaller,
 				To:                   benchContract,
 				GasLimit:             100_000,
-				MaxFeePerGas:         types.U256From(2),
-				MaxPriorityFeePerGas: types.U256From(1),
+				MaxFeePerGas:         *uint256.NewInt(2),
+				MaxPriorityFeePerGas: *uint256.NewInt(1),
 				Input:                calldata,
 			})
 			evm.ReleaseEvm()
@@ -575,7 +575,7 @@ func BenchmarkTxType(b *testing.B) {
 
 	b.Run("EIP4844", func(b *testing.B) {
 		block := blockEnvForSpec(spec.Cancun)
-		block.BlobGasPrice = types.U256From(1)
+		block.BlobGasPrice = *uint256.NewInt(1)
 		db := makeDB()
 		// Versioned hash: 0x01 prefix (VERSIONED_HASH_VERSION_KZG)
 		var hashBytes types.B256
@@ -591,9 +591,9 @@ func BenchmarkTxType(b *testing.B) {
 				Caller:               benchCaller,
 				To:                   benchContract,
 				GasLimit:             100_000,
-				MaxFeePerGas:         types.U256From(2),
-				MaxPriorityFeePerGas: types.U256From(1),
-				MaxFeePerBlobGas:     types.U256From(10),
+				MaxFeePerGas:         *uint256.NewInt(2),
+				MaxPriorityFeePerGas: *uint256.NewInt(1),
+				MaxFeePerBlobGas:     *uint256.NewInt(10),
 				Input:                calldata,
 				BlobHashes:           []uint256.Int{blobHash},
 			})
@@ -606,7 +606,7 @@ func BenchmarkTxType(b *testing.B) {
 		db := makeDB()
 		// Dummy authorization: invalid signature will be skipped but list is non-empty
 		auth := host.Authorization{
-			ChainId: types.U256From(1),
+			ChainId: *uint256.NewInt(1),
 			Address: benchContract,
 		}
 		b.ReportAllocs()
@@ -619,8 +619,8 @@ func BenchmarkTxType(b *testing.B) {
 				Caller:               benchCaller,
 				To:                   benchContract,
 				GasLimit:             100_000,
-				MaxFeePerGas:         types.U256From(2),
-				MaxPriorityFeePerGas: types.U256From(1),
+				MaxFeePerGas:         *uint256.NewInt(2),
+				MaxPriorityFeePerGas: *uint256.NewInt(1),
 				Input:                calldata,
 				AuthorizationList:    []host.Authorization{auth},
 			})

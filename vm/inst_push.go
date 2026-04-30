@@ -2,14 +2,13 @@
 package vm
 
 import (
-	"github.com/Giulio2002/gevm/types"
 	"github.com/holiman/uint256"
 )
 
 // opPush0 — PushVal body. Fork gate (Shanghai) handled by generator.
 func opPush0(interp *Interpreter) {
 	s := interp.Stack
-	s.data[s.top] = types.U256Zero
+	s.data[s.top] = uint256.Int{}
 	s.top++
 }
 
@@ -91,7 +90,7 @@ func opPush32(interp *Interpreter) {
 func opPushN(interp *Interpreter, op byte) {
 	s := interp.Stack
 	n := int(op - 0x5F) // opcode.PUSH0 = 0x5F, so PUSH5 (0x64) => n=5
-	s.data[s.top] = types.U256FromBytes(interp.Bytecode.code[interp.Bytecode.pc : interp.Bytecode.pc+n])
+	s.data[s.top] = *new(uint256.Int).SetBytes(interp.Bytecode.code[interp.Bytecode.pc : interp.Bytecode.pc+n])
 	interp.Bytecode.pc += n
 	s.top++
 }

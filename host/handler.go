@@ -8,6 +8,7 @@ import (
 	"github.com/Giulio2002/gevm/state"
 	"github.com/Giulio2002/gevm/types"
 	"github.com/Giulio2002/gevm/vm"
+	"github.com/holiman/uint256"
 )
 
 // MaxCodeSize is the maximum contract code size (EIP-170).
@@ -527,9 +528,9 @@ func (h *Handler) handleCallReturn(interp *vm.Interpreter, outcome vm.CallOutcom
 
 	// Push success (1) or failure (0) to parent stack
 	if result.Result.IsOk() {
-		interp.Stack.Push(types.U256From(1))
+		interp.Stack.Push(*uint256.NewInt(1))
 	} else {
-		interp.Stack.Push(types.U256Zero)
+		interp.Stack.Push(uint256.Int{})
 	}
 
 	// Copy return data to parent memory (if success or revert)
@@ -569,7 +570,7 @@ func (h *Handler) handleCreateReturn(interp *vm.Interpreter, outcome vm.CreateOu
 	if result.Result.IsOk() && outcome.Address != nil {
 		interp.Stack.Push(outcome.Address.ToU256())
 	} else {
-		interp.Stack.Push(types.U256Zero)
+		interp.Stack.Push(uint256.Int{})
 	}
 
 	// Return remaining gas to parent

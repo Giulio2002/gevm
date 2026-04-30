@@ -2,25 +2,25 @@ package vm
 
 // Comparison and bitwise opcode handlers.
 
-import "github.com/Giulio2002/gevm/types"
+import "github.com/holiman/uint256"
 
 // opLt — BinaryOp body.
 func opLt(interp *Interpreter) {
 	s := interp.Stack
-	if types.LtPtr(&s.data[s.top], &s.data[s.top-1]) {
-		s.data[s.top-1] = types.U256One
+	if s.data[s.top].Lt(&s.data[s.top-1]) {
+		s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 	} else {
-		s.data[s.top-1] = types.U256Zero
+		s.data[s.top-1] = uint256.Int{}
 	}
 }
 
 // opGt — BinaryOp body.
 func opGt(interp *Interpreter) {
 	s := interp.Stack
-	if types.GtPtr(&s.data[s.top], &s.data[s.top-1]) {
-		s.data[s.top-1] = types.U256One
+	if s.data[s.top].Gt(&s.data[s.top-1]) {
+		s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 	} else {
-		s.data[s.top-1] = types.U256Zero
+		s.data[s.top-1] = uint256.Int{}
 	}
 }
 
@@ -35,12 +35,12 @@ func opSlt(interp *Interpreter) {
 	if aNeg != bNeg {
 		lt = aNeg > bNeg
 	} else {
-		lt = types.LtPtr(a, b)
+		lt = a.Lt(b)
 	}
 	if lt {
-		s.data[s.top-1] = types.U256One
+		s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 	} else {
-		s.data[s.top-1] = types.U256Zero
+		s.data[s.top-1] = uint256.Int{}
 	}
 }
 
@@ -55,57 +55,57 @@ func opSgt(interp *Interpreter) {
 	if aNeg != bNeg {
 		gt = bNeg > aNeg
 	} else {
-		gt = types.GtPtr(a, b)
+		gt = a.Gt(b)
 	}
 	if gt {
-		s.data[s.top-1] = types.U256One
+		s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 	} else {
-		s.data[s.top-1] = types.U256Zero
+		s.data[s.top-1] = uint256.Int{}
 	}
 }
 
 // opEq — BinaryOp body.
 func opEq(interp *Interpreter) {
 	s := interp.Stack
-	if types.EqPtr(&s.data[s.top], &s.data[s.top-1]) {
-		s.data[s.top-1] = types.U256One
+	if s.data[s.top].Eq(&s.data[s.top-1]) {
+		s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 	} else {
-		s.data[s.top-1] = types.U256Zero
+		s.data[s.top-1] = uint256.Int{}
 	}
 }
 
 // opIszero — UnaryOp body.
 func opIszero(interp *Interpreter) {
 	s := interp.Stack
-	if types.IsZeroPtr(&s.data[s.top-1]) {
-		s.data[s.top-1] = types.U256One
+	if s.data[s.top-1].IsZero() {
+		s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 	} else {
-		s.data[s.top-1] = types.U256Zero
+		s.data[s.top-1] = uint256.Int{}
 	}
 }
 
 // opAnd — BinaryOp body.
 func opAnd(interp *Interpreter) {
 	s := interp.Stack
-	types.AndTo(&s.data[s.top-1], &s.data[s.top], &s.data[s.top-1])
+	s.data[s.top-1].And(&s.data[s.top], &s.data[s.top-1])
 }
 
 // opOr — BinaryOp body.
 func opOr(interp *Interpreter) {
 	s := interp.Stack
-	types.OrTo(&s.data[s.top-1], &s.data[s.top], &s.data[s.top-1])
+	s.data[s.top-1].Or(&s.data[s.top], &s.data[s.top-1])
 }
 
 // opXor — BinaryOp body.
 func opXor(interp *Interpreter) {
 	s := interp.Stack
-	types.XorTo(&s.data[s.top-1], &s.data[s.top], &s.data[s.top-1])
+	s.data[s.top-1].Xor(&s.data[s.top], &s.data[s.top-1])
 }
 
 // opNot — UnaryOp body.
 func opNot(interp *Interpreter) {
 	s := interp.Stack
-	types.NotTo(&s.data[s.top-1], &s.data[s.top-1])
+	s.data[s.top-1].Not(&s.data[s.top-1])
 }
 
 // opByte — BinaryOp body.
@@ -113,11 +113,14 @@ func opByte(interp *Interpreter) {
 	s := interp.Stack
 	a := s.data[s.top]
 	top := &s.data[s.top-1]
-	idx := types.U256AsUsizeSaturated(&a)
+	idx, overflow := a.Uint64WithOverflow()
 	if idx < 32 {
-		*top = types.U256From(uint64(types.U256ByteBE(top, uint(idx))))
+		index := *uint256.NewInt(idx)
+		top.Byte(&index)
+	} else if overflow {
+		*top = uint256.Int{}
 	} else {
-		*top = types.U256Zero
+		*top = uint256.Int{}
 	}
 }
 
@@ -126,11 +129,11 @@ func opShl(interp *Interpreter) {
 	s := interp.Stack
 	shift := s.data[s.top]
 	top := &s.data[s.top-1]
-	sa := types.U256AsUsizeSaturated(&shift)
-	if sa < 256 {
+	sa, overflow := shift.Uint64WithOverflow()
+	if !overflow && sa < 256 {
 		top.Lsh(top, uint(sa))
 	} else {
-		*top = types.U256Zero
+		*top = uint256.Int{}
 	}
 }
 
@@ -139,11 +142,11 @@ func opShr(interp *Interpreter) {
 	s := interp.Stack
 	shift := s.data[s.top]
 	top := &s.data[s.top-1]
-	sa := types.U256AsUsizeSaturated(&shift)
-	if sa < 256 {
+	sa, overflow := shift.Uint64WithOverflow()
+	if !overflow && sa < 256 {
 		top.Rsh(top, uint(sa))
 	} else {
-		*top = types.U256Zero
+		*top = uint256.Int{}
 	}
 }
 
@@ -152,13 +155,13 @@ func opSar(interp *Interpreter) {
 	s := interp.Stack
 	shift := s.data[s.top]
 	top := &s.data[s.top-1]
-	sa := types.U256AsUsizeSaturated(&shift)
-	if sa < 256 {
+	sa, overflow := shift.Uint64WithOverflow()
+	if !overflow && sa < 256 {
 		top.SRsh(top, uint(sa))
-	} else if types.U256Bit(top, 255) {
-		*top = types.U256Max
+	} else if top[3]&(1<<63) != 0 {
+		*top = uint256.Int{^uint64(0), ^uint64(0), ^uint64(0), ^uint64(0)}
 	} else {
-		*top = types.U256Zero
+		*top = uint256.Int{}
 	}
 }
 
@@ -166,5 +169,5 @@ func opSar(interp *Interpreter) {
 func opClz(interp *Interpreter) {
 	s := interp.Stack
 	top := &s.data[s.top-1]
-	*top = types.U256From(uint64(types.U256LeadingZeros(top)))
+	*top = *uint256.NewInt(uint64(256 - top.BitLen()))
 }

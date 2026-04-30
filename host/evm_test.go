@@ -16,7 +16,7 @@ import (
 func makeEvm(db state.Database, forkID spec.ForkID, block BlockEnv) *Evm {
 	// Set a default block gas limit if not specified
 	if block.GasLimit == (uint256.Int{}) {
-		block.GasLimit = types.U256From(30_000_000) // 30M default
+		block.GasLimit = *uint256.NewInt(30_000_000) // 30M default
 	}
 	return NewEvm(db, forkID, block, CfgEnv{ChainId: u(1)})
 }

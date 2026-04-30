@@ -5,6 +5,7 @@ import (
 
 	"github.com/Giulio2002/gevm/spec"
 	"github.com/Giulio2002/gevm/types"
+	"github.com/holiman/uint256"
 )
 
 func TestInterpreterNew(t *testing.T) {
@@ -49,7 +50,7 @@ func TestInterpreterDefault(t *testing.T) {
 
 func TestInterpreterClear(t *testing.T) {
 	interp := DefaultInterpreter()
-	interp.Stack.Push(types.U256From(42))
+	interp.Stack.Push(*uint256.NewInt(42))
 	interp.Gas.RecordCost(100)
 
 	interp.Clear(

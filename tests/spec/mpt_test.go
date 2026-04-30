@@ -124,7 +124,7 @@ func TestStorageRootEmpty(t *testing.T) {
 
 func TestStorageRootSingleSlot(t *testing.T) {
 	storage := map[uint256.Int]uint256.Int{
-		types.U256From(0): types.U256From(1),
+		*uint256.NewInt(0): *uint256.NewInt(1),
 	}
 	root := storageRoot(storage)
 	if root == emptyTrieRoot {
@@ -140,7 +140,7 @@ func TestStorageRootSingleSlot(t *testing.T) {
 
 func TestRlpEncodeAccount(t *testing.T) {
 	// Verify account RLP encoding produces a valid RLP list
-	encoded := rlpEncodeAccount(0, types.U256Zero, emptyTrieRoot, types.KeccakEmpty)
+	encoded := rlpEncodeAccount(0, uint256.Int{}, emptyTrieRoot, types.KeccakEmpty)
 	if len(encoded) == 0 {
 		t.Fatal("empty account encoding")
 	}

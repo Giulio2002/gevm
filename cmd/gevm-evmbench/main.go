@@ -57,19 +57,19 @@ func main() {
 	coinbase := types.Address{}
 
 	forkID := spec.Cancun
-	hugeBalance := types.U256FromLimbs(0, 0, 1, 0) // ~2^128
-	gasLimit := uint64(1) << 63                    // large, won't overflow
+	hugeBalance := uint256.Int{0, 0, 1, 0} // ~2^128
+	gasLimit := uint64(1) << 63            // large, won't overflow
 
-	prevrandao := types.U256Zero
+	prevrandao := uint256.Int{}
 	block := host.BlockEnv{
 		Beneficiary: coinbase,
-		GasLimit:    types.U256From(gasLimit),
-		BaseFee:     types.U256Zero,
-		Number:      types.U256From(1),
-		Timestamp:   types.U256From(1000),
+		GasLimit:    *uint256.NewInt(gasLimit),
+		BaseFee:     uint256.Int{},
+		Number:      *uint256.NewInt(1),
+		Timestamp:   *uint256.NewInt(1000),
 		Prevrandao:  &prevrandao,
 	}
-	cfg := host.CfgEnv{ChainId: types.U256From(1)}
+	cfg := host.CfgEnv{ChainId: *uint256.NewInt(1)}
 
 	// Step 1: Deploy contract via CREATE.
 	deployDB := spectest.NewMemDB()

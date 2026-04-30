@@ -19,11 +19,12 @@ import (
 	"testing"
 
 	"github.com/Giulio2002/gevm/host"
-	"github.com/Giulio2002/gevm/types"
 	gevmspec "github.com/Giulio2002/gevm/spec"
 	"github.com/Giulio2002/gevm/state"
-	"github.com/Giulio2002/gevm/vm"
 	"github.com/Giulio2002/gevm/tests/spec"
+	"github.com/Giulio2002/gevm/types"
+	"github.com/Giulio2002/gevm/vm"
+	"github.com/holiman/uint256"
 )
 
 // --- Golden fixture tests ---
@@ -163,7 +164,7 @@ func executeGolden(tt goldenTest) host.ExecutionResult {
 
 	// Fund sender
 	db.InsertAccount(sender, state.AccountInfo{
-		Balance: types.U256From(1e18),
+		Balance: *uint256.NewInt(1e18),
 	}, nil)
 
 	// Target with code
@@ -177,17 +178,17 @@ func executeGolden(tt goldenTest) host.ExecutionResult {
 
 	block := host.BlockEnv{
 		Beneficiary: types.Address{0xcc},
-		GasLimit:    types.U256From(30_000_000),
-		BaseFee:     types.U256From(10),
-		Number:      types.U256From(1),
-		Timestamp:   types.U256From(1000),
+		GasLimit:    *uint256.NewInt(30_000_000),
+		BaseFee:     *uint256.NewInt(10),
+		Number:      *uint256.NewInt(1),
+		Timestamp:   *uint256.NewInt(1000),
 	}
 	if tt.ForkID.IsEnabledIn(gevmspec.Merge) {
-		v := types.U256Zero
+		v := uint256.Int{}
 		block.Prevrandao = &v
 	}
 
-	cfg := host.CfgEnv{ChainId: types.U256From(1)}
+	cfg := host.CfgEnv{ChainId: *uint256.NewInt(1)}
 
 	evm := host.NewEvm(db, tt.ForkID, block, cfg)
 
@@ -196,10 +197,10 @@ func executeGolden(tt goldenTest) host.ExecutionResult {
 		TxType:   host.TxTypeLegacy,
 		Caller:   sender,
 		To:       target,
-		Value:    types.U256From(tt.Value),
+		Value:    *uint256.NewInt(tt.Value),
 		Input:    tt.Input,
 		GasLimit: tt.GasLimit,
-		GasPrice: types.U256From(10),
+		GasPrice: *uint256.NewInt(10),
 	}
 
 	return evm.Transact(&tx)
@@ -248,7 +249,7 @@ func executeWithCode(code []byte, forkID gevmspec.ForkID) host.ExecutionResult {
 
 	db := spec.NewMemDB()
 	db.InsertAccount(sender, state.AccountInfo{
-		Balance: types.U256From(1e18),
+		Balance: *uint256.NewInt(1e18),
 	}, nil)
 
 	if code != nil {
@@ -261,15 +262,15 @@ func executeWithCode(code []byte, forkID gevmspec.ForkID) host.ExecutionResult {
 
 	block := host.BlockEnv{
 		Beneficiary: types.Address{0xcc},
-		GasLimit:    types.U256From(30_000_000),
-		BaseFee:     types.U256From(10),
-		Number:      types.U256From(1),
-		Timestamp:   types.U256From(1000),
+		GasLimit:    *uint256.NewInt(30_000_000),
+		BaseFee:     *uint256.NewInt(10),
+		Number:      *uint256.NewInt(1),
+		Timestamp:   *uint256.NewInt(1000),
 	}
-	v := types.U256Zero
+	v := uint256.Int{}
 	block.Prevrandao = &v
 
-	evm := host.NewEvm(db, forkID, block, host.CfgEnv{ChainId: types.U256From(1)})
+	evm := host.NewEvm(db, forkID, block, host.CfgEnv{ChainId: *uint256.NewInt(1)})
 
 	return evm.Transact(&host.Transaction{
 		Kind:     host.TxKindCall,
@@ -277,7 +278,7 @@ func executeWithCode(code []byte, forkID gevmspec.ForkID) host.ExecutionResult {
 		Caller:   sender,
 		To:       target,
 		GasLimit: 1_000_000,
-		GasPrice: types.U256From(10),
+		GasPrice: *uint256.NewInt(10),
 	})
 }
 

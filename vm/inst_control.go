@@ -4,6 +4,7 @@ package vm
 import (
 	"github.com/Giulio2002/gevm/opcode"
 	"github.com/Giulio2002/gevm/types"
+	"github.com/holiman/uint256"
 )
 
 // opJump — Custom flush handler. Validates jump destination.
@@ -66,14 +67,14 @@ func opJumpi(interp *Interpreter) {
 // opPc — PushVal body. Pushes current PC (before this instruction).
 func opPc(interp *Interpreter) {
 	s := interp.Stack
-	s.data[s.top] = types.U256From(uint64(interp.Bytecode.pc - 1))
+	s.data[s.top] = *uint256.NewInt(uint64(interp.Bytecode.pc - 1))
 	s.top++
 }
 
 // opMsize — PushVal body. Pushes current memory size.
 func opMsize(interp *Interpreter) {
 	s := interp.Stack
-	s.data[s.top] = types.U256From(uint64(interp.Memory.Len()))
+	s.data[s.top] = *uint256.NewInt(uint64(interp.Memory.Len()))
 	s.top++
 }
 
@@ -84,7 +85,7 @@ func opGas(interp *Interpreter) {
 		interp.HaltOverflow()
 		return
 	}
-	s.data[s.top] = types.U256From(interp.Gas.remaining)
+	s.data[s.top] = *uint256.NewInt(interp.Gas.remaining)
 	s.top++
 }
 
@@ -168,7 +169,7 @@ func opSelfdestruct(interp *Interpreter, host Host) {
 		return
 	}
 	s.top--
-	target := types.U256ToAddress(&s.data[s.top])
+	target := types.Address(s.data[s.top].Bytes20())
 	addr := interp.Input.TargetAddress
 	result := host.SelfDestruct(addr, target)
 	cost := interp.GasParams.SelfdestructCost(result.HadValue && !result.TargetExists, result.IsCold)

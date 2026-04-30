@@ -9,7 +9,7 @@ import (
 // opAdd — BinaryOp body. s.top already decremented.
 func opAdd(interp *Interpreter) {
 	s := interp.Stack
-	types.AddTo(&s.data[s.top-1], &s.data[s.top], &s.data[s.top-1])
+	s.data[s.top-1].Add(&s.data[s.top], &s.data[s.top-1])
 }
 
 // opMul — BinaryOp body.
@@ -23,7 +23,7 @@ func opMul(interp *Interpreter) {
 // opSub — BinaryOp body.
 func opSub(interp *Interpreter) {
 	s := interp.Stack
-	types.SubTo(&s.data[s.top-1], &s.data[s.top], &s.data[s.top-1])
+	s.data[s.top-1].Sub(&s.data[s.top], &s.data[s.top-1])
 }
 
 // opDiv — BinaryOp body.
@@ -31,7 +31,7 @@ func opDiv(interp *Interpreter) {
 	s := interp.Stack
 	a := s.data[s.top]
 	top := &s.data[s.top-1]
-	if !types.IsZeroPtr(top) {
+	if !top.IsZero() {
 		top.Div(&a, top)
 	}
 }
@@ -41,7 +41,7 @@ func opSdiv(interp *Interpreter) {
 	s := interp.Stack
 	a := s.data[s.top]
 	top := &s.data[s.top-1]
-	*top = types.SDiv(a, *top)
+	top.SDiv(&a, top)
 }
 
 // opMod — BinaryOp body.
@@ -49,7 +49,7 @@ func opMod(interp *Interpreter) {
 	s := interp.Stack
 	a := s.data[s.top]
 	top := &s.data[s.top-1]
-	if !types.IsZeroPtr(top) {
+	if !top.IsZero() {
 		top.Mod(&a, top)
 	}
 }
@@ -59,7 +59,7 @@ func opSmod(interp *Interpreter) {
 	s := interp.Stack
 	a := s.data[s.top]
 	top := &s.data[s.top-1]
-	*top = types.SMod(a, *top)
+	top.SMod(&a, top)
 }
 
 // opAddmod — TernaryOp body. s.top already decremented by 2.
@@ -85,7 +85,7 @@ func opSignextend(interp *Interpreter) {
 	s := interp.Stack
 	ext := s.data[s.top]
 	top := &s.data[s.top-1]
-	*top = types.SignExtend(ext, *top)
+	top.ExtendSign(top, &ext)
 }
 
 // opExp — Custom flush handler. Full body after gas flush.

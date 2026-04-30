@@ -36,7 +36,7 @@ func (u *TestUnit) ChainId() uint256.Int {
 	if u.Env.CurrentChainID != nil {
 		return u.Env.CurrentChainID.V
 	}
-	return types.U256From(1) // default mainnet
+	return *uint256.NewInt(1) // default mainnet
 }
 
 // TestEnv holds block environment variables from the test JSON.

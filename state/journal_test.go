@@ -39,7 +39,7 @@ func (db *mockDB) Storage(address types.Address, index uint256.Int) (uint256.Int
 			return val, nil
 		}
 	}
-	return types.U256Zero, nil
+	return uint256.Int{}, nil
 }
 
 func (db *mockDB) HasStorage(address types.Address) (bool, error) {
@@ -233,7 +233,7 @@ func TestJournalTransientStorage(t *testing.T) {
 
 	// TLoad of empty returns zero
 	val := j.TLoad(a1, u256(1))
-	if val != types.U256Zero {
+	if val != (uint256.Int{}) {
 		t.Fatal("empty tload should return zero")
 	}
 
@@ -262,9 +262,9 @@ func TestJournalTransientStorage(t *testing.T) {
 	}
 
 	// TStore zero - removes entry
-	j.TStore(a1, u256(1), types.U256Zero)
+	j.TStore(a1, u256(1), uint256.Int{})
 	val = j.TLoad(a1, u256(1))
-	if val != types.U256Zero {
+	if val != (uint256.Int{}) {
 		t.Fatal("should be zero after storing zero")
 	}
 }
@@ -512,7 +512,7 @@ func TestJournalCommitTx(t *testing.T) {
 	if len(j.Entries) != 0 {
 		t.Fatal("journal entries should be cleared")
 	}
-	if j.TLoad(a1, u256(1)) != types.U256Zero {
+	if j.TLoad(a1, u256(1)) != (uint256.Int{}) {
 		t.Fatal("transient storage should be cleared")
 	}
 	if j.TransactionID != 1 {

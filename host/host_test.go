@@ -41,7 +41,7 @@ func (db *mockDB) Storage(address types.Address, index uint256.Int) (uint256.Int
 			return val, nil
 		}
 	}
-	return types.U256Zero, nil
+	return uint256.Int{}, nil
 }
 
 func (db *mockDB) HasStorage(address types.Address) (bool, error) {
@@ -59,7 +59,7 @@ func (db *mockDB) BlockHash(number uint64) (types.B256, error) {
 	return types.B256{byte(number)}, nil
 }
 
-func u(v uint64) uint256.Int { return types.U256From(v) }
+func u(v uint64) uint256.Int { return *uint256.NewInt(v) }
 
 func addr(b byte) types.Address {
 	var a types.Address
@@ -225,7 +225,7 @@ func TestEvmHostTransientStorage(t *testing.T) {
 	host := NewEvmHost(journal, &BlockEnv{}, TxEnv{}, &CfgEnv{})
 
 	val := host.TLoad(addr(1), u(5))
-	if val != types.U256Zero {
+	if val != (uint256.Int{}) {
 		t.Fatal("empty tload should be zero")
 	}
 

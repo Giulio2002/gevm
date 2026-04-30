@@ -14,6 +14,7 @@ import (
 	gevmspec "github.com/Giulio2002/gevm/spec"
 	"github.com/Giulio2002/gevm/types"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
+	"github.com/holiman/uint256"
 )
 
 // TestError describes a single test failure.
@@ -290,9 +291,9 @@ func BuildTransaction(unit *TestUnit, tc *TestCase, caller types.Address) (host.
 	tx := host.Transaction{
 		Caller:   caller,
 		Input:    unit.Transaction.Data[idx.Data].V,
-		GasLimit: types.U256AsUsize(&unit.Transaction.GasLimit[idx.Gas].V),
+		GasLimit: unit.Transaction.GasLimit[idx.Gas].V.Uint64(),
 		Value:    unit.Transaction.Value[idx.Value].V,
-		Nonce:    types.U256AsUsize(&unit.Transaction.Nonce.V),
+		Nonce:    unit.Transaction.Nonce.V.Uint64(),
 	}
 
 	// Determine transaction type
@@ -424,14 +425,14 @@ func parseAuthorizationList(raw json.RawMessage) []host.Authorization {
 	for i, e := range entries {
 		auths[i].ChainId = e.ChainId.V
 		auths[i].Address = e.Address.V
-		auths[i].Nonce = types.U256AsUsize(&e.Nonce.V)
+		auths[i].Nonce = e.Nonce.V.Uint64()
 		copy(auths[i].R[:], e.R.V[:])
 		copy(auths[i].S[:], e.S.V[:])
 		// Prefer yParity over v
 		if e.YParity != nil {
-			auths[i].YParity = uint8(types.U256AsUsize(&e.YParity.V))
+			auths[i].YParity = uint8(e.YParity.V.Uint64())
 		} else {
-			auths[i].YParity = uint8(types.U256AsUsize(&e.V.V))
+			auths[i].YParity = uint8(e.V.V.Uint64())
 		}
 	}
 	return auths
@@ -456,15 +457,15 @@ func BuildBlockEnv(unit *TestUnit, forkID gevmspec.ForkID) host.BlockEnv {
 		v := env.CurrentRandom.V.ToU256()
 		block.Prevrandao = &v
 	} else if forkID.IsEnabledIn(gevmspec.Merge) {
-		v := types.U256Zero
+		v := uint256.Int{}
 		block.Prevrandao = &v
 	}
 
 	// EIP-4844: compute blob gas price from excess blob gas
 	if env.CurrentExcessBlobGas != nil {
-		excessBlobGas := types.U256AsUsize(&env.CurrentExcessBlobGas.V)
+		excessBlobGas := env.CurrentExcessBlobGas.V.Uint64()
 		blobGasPrice := gevmspec.CalcBlobGasPrice(excessBlobGas, forkID)
-		block.BlobGasPrice = types.U256From(blobGasPrice)
+		block.BlobGasPrice = *uint256.NewInt(blobGasPrice)
 	}
 
 	return block

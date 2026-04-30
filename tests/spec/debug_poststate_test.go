@@ -9,7 +9,7 @@ import (
 
 	"github.com/Giulio2002/gevm/host"
 	gevmspec "github.com/Giulio2002/gevm/spec"
-	"github.com/Giulio2002/gevm/types"
+	"github.com/holiman/uint256"
 )
 
 // TestDebugPostState runs post-state validation on specific directories.
@@ -124,15 +124,15 @@ func TestDebugClearReturnBuffer(t *testing.T) {
 				var targetOpcode uint64
 				if len(tx.Input) >= 36 {
 					// param1 is at bytes 4..36 (big-endian uint256.Int)
-					param1 := types.U256FromBytes32([32]byte(tx.Input[4:36]))
-					targetOpcode = types.U256AsUsize(&param1)
+					param1 := *new(uint256.Int).SetBytes(tx.Input[4:36])
+					targetOpcode = param1.Uint64()
 				}
 
 				// Extract size from calldata (param3, starts at byte 68, 32 bytes)
 				var sizeParam uint64
 				if len(tx.Input) >= 100 {
-					param3 := types.U256FromBytes32([32]byte(tx.Input[68:100]))
-					sizeParam = types.U256AsUsize(&param3)
+					param3 := *new(uint256.Int).SetBytes(tx.Input[68:100])
+					sizeParam = param3.Uint64()
 				}
 
 				db := BuildMemDB(unit.Pre)
@@ -174,7 +174,7 @@ func TestDebugClearReturnBuffer(t *testing.T) {
 					for hexSlot, hexVal := range expectedAcct.Storage {
 						slot := hexSlot.V.ToU256()
 						wantVal := hexVal.V
-						gotVal := types.U256Zero
+						gotVal := uint256.Int{}
 						if acc.Storage != nil {
 							if sv, ok := acc.Storage[slot]; ok {
 								gotVal = sv.PresentValue
@@ -208,16 +208,18 @@ func TestDebugClearReturnBuffer(t *testing.T) {
 							gotBal := acc.Info.Balance
 							wantBal := expectedAcct.Balance.V
 							if gotBal != wantBal {
-								gasPrice := types.U256AsUsize(&tx.GasPrice)
+								gasPrice := tx.GasPrice.Uint64()
 								var deltaGas uint64
 								var sign string
 								if gotBal.Gt(&wantBal) {
-									delta := types.Sub(&gotBal, &wantBal)
-									deltaGas = types.U256AsUsize(&delta) / gasPrice
+									var delta uint256.Int
+									delta.Sub(&gotBal, &wantBal)
+									deltaGas = delta.Uint64() / gasPrice
 									sign = "over"
 								} else {
-									delta := types.Sub(&wantBal, &gotBal)
-									deltaGas = types.U256AsUsize(&delta) / gasPrice
+									var delta uint256.Int
+									delta.Sub(&wantBal, &gotBal)
+									deltaGas = delta.Uint64() / gasPrice
 									sign = "under"
 								}
 								perByte := uint64(0)

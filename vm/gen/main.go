@@ -511,7 +511,7 @@ func (e *emitter) emitPushGeneric() {
 	e.p("interp.HaltOverflow()\n")
 	e.p("} else {\n")
 	e.p("n := int(op - opcode.PUSH0)\n")
-	e.p("s.data[s.top] = types.U256FromBytes(bc.code[bc.pc : bc.pc+n])\n")
+	e.p("s.data[s.top] = *new(uint256.Int).SetBytes(bc.code[bc.pc : bc.pc+n])\n")
 	e.p("bc.pc += n\n")
 	e.p("s.top++\n")
 	e.p("}\n")
@@ -716,7 +716,7 @@ func (e *emitter) emitHeader() {
 	// Silence unused import warnings for cases where inline bodies use keccak
 	e.p("// Ensure imports are used.\n")
 	e.p("var (\n")
-	e.p("\t_ = types.U256Zero\n")
+	e.p("\t_ = uint256.Int{}\n")
 	e.p("\t_ = spec.GasVerylow\n")
 	e.p("\t_ = opcode.STOP\n")
 	e.p(")\n\n")

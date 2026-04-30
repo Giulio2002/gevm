@@ -190,13 +190,13 @@ func executeOneTransactionFork(
 
 // secp256k1 order N and N/2 for signature validation.
 var (
-	secp256k1N = types.U256FromBytes([]byte{
+	secp256k1N = *new(uint256.Int).SetBytes([]byte{
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe,
 		0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
 		0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x41,
 	})
-	secp256k1HalfN = types.U256FromBytes([]byte{
+	secp256k1HalfN = *new(uint256.Int).SetBytes([]byte{
 		0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 		0x5d, 0x57, 0x6e, 0x73, 0x57, 0xa4, 0x50, 0x1d,
@@ -261,7 +261,7 @@ func validateTxForFork(tx *DecodedTx, forkID gevmspec.ForkID) error {
 
 	// V validation for typed transactions (must be 0 or 1)
 	if tx.TxType > 0 {
-		vU64 := types.U256AsUsize(&tx.V)
+		vU64 := tx.V.Uint64()
 		if vU64 > 1 {
 			return fmt.Errorf("invalid yParity: %d", vU64)
 		}
@@ -269,7 +269,7 @@ func validateTxForFork(tx *DecodedTx, forkID gevmspec.ForkID) error {
 
 	// V validation for legacy transactions
 	if tx.TxType == 0 {
-		vU64 := types.U256AsUsize(&tx.V)
+		vU64 := tx.V.Uint64()
 		if vU64 != 27 && vU64 != 28 {
 			// EIP-155: V = 2*chainId + 35 + {0,1}
 			if vU64 < 35 {
@@ -304,10 +304,12 @@ func validateTxForFork(tx *DecodedTx, forkID gevmspec.ForkID) error {
 			gasPrice = tx.MaxFeePerGas
 		}
 		if !gasPrice.IsZero() {
-			gasLimitU := types.U256From(tx.GasLimit)
-			product := types.Mul(&gasPrice, &gasLimitU)
+			gasLimitU := *uint256.NewInt(tx.GasLimit)
+			var product uint256.Int
+			product.Mul(&gasPrice, &gasLimitU)
 			// Check for overflow using division: product / gasLimit should equal gasPrice
-			quotient := types.Div(&product, &gasLimitU)
+			var quotient uint256.Int
+			quotient.Div(&product, &gasLimitU)
 			if quotient != gasPrice {
 				return fmt.Errorf("gasLimit * gasPrice overflow")
 			}

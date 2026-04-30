@@ -5,6 +5,7 @@ import (
 
 	"github.com/Giulio2002/gevm/spec"
 	"github.com/Giulio2002/gevm/types"
+	"github.com/holiman/uint256"
 )
 
 func TestMemoryNew(t *testing.T) {
@@ -54,7 +55,7 @@ func TestMemorySetGet(t *testing.T) {
 	}
 
 	// Set/get uint256.Int
-	val := types.U256From(0xDEADBEEF)
+	val := *uint256.NewInt(0xDEADBEEF)
 	m.SetU256(32, val)
 	gotU256 := m.GetU256(32)
 	if !gotU256.Eq(&val) {

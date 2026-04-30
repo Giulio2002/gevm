@@ -6,7 +6,6 @@ import (
 
 	"github.com/Giulio2002/gevm/opcode"
 	"github.com/Giulio2002/gevm/spec"
-	"github.com/Giulio2002/gevm/types"
 )
 
 // runBytecode creates an interpreter, loads bytecode, and runs it to completion.
@@ -28,7 +27,7 @@ func runBytecodeWithSpec(code []byte, gasLimit uint64, forkID spec.ForkID) *Inte
 }
 
 func u(v uint64) uint256.Int {
-	return types.U256From(v)
+	return *uint256.NewInt(v)
 }
 
 func up(v uint256.Int) *uint256.Int {
@@ -80,7 +79,7 @@ func TestOpAdd(t *testing.T) {
 }
 
 func TestOpAddOverflow(t *testing.T) {
-	interp := runBytecode(push2Op(types.U256Max, u(1), opcode.ADD), 100000)
+	interp := runBytecode(push2Op(uint256.Int{^uint64(0), ^uint64(0), ^uint64(0), ^uint64(0)}, u(1), opcode.ADD), 100000)
 	val, _ := interp.Stack.Pop()
 	if !val.IsZero() {
 		t.Errorf("MAX+1 should wrap to 0: got %s", val.Hex())
@@ -107,7 +106,7 @@ func TestOpSub(t *testing.T) {
 func TestOpSubUnderflow(t *testing.T) {
 	interp := runBytecode(push2Op(u(1), u(0), opcode.SUB), 100000)
 	val, _ := interp.Stack.Pop()
-	if !val.Eq(up(types.U256Max)) {
+	if !val.Eq(up(uint256.Int{^uint64(0), ^uint64(0), ^uint64(0), ^uint64(0)})) {
 		t.Errorf("0-1 should wrap to MAX: got %s", val.Hex())
 	}
 }
@@ -131,11 +130,13 @@ func TestOpDivByZero(t *testing.T) {
 
 func TestOpSdiv(t *testing.T) {
 	// -10 / 3 = -3 (in two's complement)
-	neg10 := types.Sub(up(types.U256Zero), up(u(10))) // wrapping: MAX - 9
+	var neg10 uint256.Int
+	neg10.Sub(up(uint256.Int{}), up(u(10))) // wrapping: MAX - 9
 	// push a=3, push b=neg10, SDIV => b/a = (-10)/3 = -3
 	interp := runBytecode(push2Op(u(3), neg10, opcode.SDIV), 100000)
 	val, _ := interp.Stack.Pop()
-	neg3 := types.Sub(up(types.U256Zero), up(u(3)))
+	var neg3 uint256.Int
+	neg3.Sub(up(uint256.Int{}), up(u(3)))
 	if !val.Eq(&neg3) {
 		t.Errorf("-10/3: got %s, want %s", val.Hex(), neg3.Hex())
 	}
@@ -191,7 +192,7 @@ func TestOpSignextend(t *testing.T) {
 	// Sign-extend byte 0: value 0xFF -> should extend to all 1s
 	interp := runBytecode(push2Op(u(0xFF), u(0), opcode.SIGNEXTEND), 100000)
 	val, _ := interp.Stack.Pop()
-	if !val.Eq(up(types.U256Max)) {
+	if !val.Eq(up(uint256.Int{^uint64(0), ^uint64(0), ^uint64(0), ^uint64(0)})) {
 		t.Errorf("signextend(0, 0xFF): got %s, want MAX", val.Hex())
 	}
 }
@@ -236,7 +237,8 @@ func TestOpEq(t *testing.T) {
 func TestOpIszero(t *testing.T) {
 	code := make([]byte, 0, 35)
 	code = append(code, opcode.PUSH32)
-	z := types.U256Zero.Bytes32()
+	var zero uint256.Int
+	z := zero.Bytes32()
 	code = append(code, z[:]...)
 	code = append(code, opcode.ISZERO)
 	interp := runBytecode(code, 100000)
@@ -273,12 +275,13 @@ func TestOpXor(t *testing.T) {
 func TestOpNot(t *testing.T) {
 	code := make([]byte, 0, 35)
 	code = append(code, opcode.PUSH32)
-	z := types.U256Zero.Bytes32()
+	var zero uint256.Int
+	z := zero.Bytes32()
 	code = append(code, z[:]...)
 	code = append(code, opcode.NOT)
 	interp := runBytecode(code, 100000)
 	val, _ := interp.Stack.Pop()
-	if !val.Eq(up(types.U256Max)) {
+	if !val.Eq(up(uint256.Int{^uint64(0), ^uint64(0), ^uint64(0), ^uint64(0)})) {
 		t.Errorf("NOT(0): got %s, want MAX", val.Hex())
 	}
 }
@@ -287,7 +290,7 @@ func TestOpShl(t *testing.T) {
 	// SHL: shift value 1 left by 255 positions
 	interp := runBytecode(push2Op(u(1), u(255), opcode.SHL), 100000)
 	val, _ := interp.Stack.Pop()
-	expected := types.U256MinNegativeI256 // 1 << 255
+	expected := uint256.Int{0, 0, 0, 1 << 63} // 1 << 255
 	if !val.Eq(&expected) {
 		t.Errorf("1<<255: got %s, want %s", val.Hex(), expected.Hex())
 	}
@@ -302,7 +305,7 @@ func TestOpShlOvershift(t *testing.T) {
 }
 
 func TestOpShr(t *testing.T) {
-	interp := runBytecode(push2Op(types.U256MinNegativeI256, u(255), opcode.SHR), 100000)
+	interp := runBytecode(push2Op(uint256.Int{0, 0, 0, 1 << 63}, u(255), opcode.SHR), 100000)
 	val, _ := interp.Stack.Pop()
 	if !val.Eq(up(u(1))) {
 		t.Errorf("(1<<255)>>255: got %s, want 1", val.Hex())
@@ -311,9 +314,9 @@ func TestOpShr(t *testing.T) {
 
 func TestOpSar(t *testing.T) {
 	// SAR of negative number: -1 >> 1 should still be -1
-	interp := runBytecode(push2Op(types.U256Max, u(1), opcode.SAR), 100000)
+	interp := runBytecode(push2Op(uint256.Int{^uint64(0), ^uint64(0), ^uint64(0), ^uint64(0)}, u(1), opcode.SAR), 100000)
 	val, _ := interp.Stack.Pop()
-	if !val.Eq(up(types.U256Max)) {
+	if !val.Eq(up(uint256.Int{^uint64(0), ^uint64(0), ^uint64(0), ^uint64(0)})) {
 		t.Errorf("(-1)>>1: got %s, want MAX", val.Hex())
 	}
 }
@@ -428,7 +431,8 @@ func TestOpMstore8(t *testing.T) {
 	interp := runBytecode(code, 100000)
 	val, _ := interp.Stack.Pop()
 	// 0xAB stored at byte 0, loaded as 32-byte big-endian => 0xAB << (31*8)
-	expected := types.Shl(&uint256.Int{0xAB, 0, 0, 0}, 248)
+	var expected uint256.Int
+	expected.Lsh(&uint256.Int{0xAB, 0, 0, 0}, 248)
 	if !val.Eq(&expected) {
 		t.Errorf("MSTORE8: got %s, want %s", val.Hex(), expected.Hex())
 	}

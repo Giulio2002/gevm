@@ -5,8 +5,6 @@ package spec
 import (
 	"fmt"
 	"github.com/holiman/uint256"
-
-	"github.com/Giulio2002/gevm/types"
 )
 
 // RlpKind distinguishes RLP strings from lists.
@@ -56,15 +54,15 @@ func (r *RlpItem) AsUint64() (uint64, error) {
 func (r *RlpItem) AsU256() (uint256.Int, error) {
 	b := r.Data
 	if len(b) == 0 {
-		return types.U256Zero, nil
+		return uint256.Int{}, nil
 	}
 	if b[0] == 0 {
-		return types.U256Zero, fmt.Errorf("RLP uint256.Int: leading zeros")
+		return uint256.Int{}, fmt.Errorf("RLP uint256.Int: leading zeros")
 	}
 	if len(b) > 32 {
-		return types.U256Zero, fmt.Errorf("RLP uint256.Int: overflow (%d bytes)", len(b))
+		return uint256.Int{}, fmt.Errorf("RLP uint256.Int: overflow (%d bytes)", len(b))
 	}
-	return types.U256FromBytes(b), nil
+	return *new(uint256.Int).SetBytes(b), nil
 }
 
 // AsList returns the list items. Returns nil if item is a string.

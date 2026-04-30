@@ -276,7 +276,7 @@ func opCall(interp *Interpreter, host Host) {
 		interp.HaltUnderflow()
 		return
 	}
-	to := types.U256ToAddress(&toVal)
+	to := types.Address(toVal.Bytes20())
 	transfersValue := !value.IsZero()
 	if interp.RuntimeFlag.IsStatic && transfersValue {
 		interp.Halt(InstructionResultCallNotAllowedInsideStatic)
@@ -286,7 +286,10 @@ func opCall(interp *Interpreter, host Host) {
 	if !ok {
 		return
 	}
-	gasLimitOnStack := types.U256AsUsizeSaturated(&stackGasLimit)
+	gasLimitOnStack, overflow := stackGasLimit.Uint64WithOverflow()
+	if overflow {
+		gasLimitOnStack = ^uint64(0)
+	}
 	gasLimit, ok := loadAccountAndCalcGas(interp, host, to, transfersValue, true, gasLimitOnStack)
 	if !ok {
 		return
@@ -315,13 +318,16 @@ func opCallcode(interp *Interpreter, host Host) {
 		interp.HaltUnderflow()
 		return
 	}
-	to := types.U256ToAddress(&toVal)
+	to := types.Address(toVal.Bytes20())
 	transfersValue := !value.IsZero()
 	inputRange, outputRange, ok := getMemoryInputAndOutRanges(interp)
 	if !ok {
 		return
 	}
-	gasLimitOnStack := types.U256AsUsizeSaturated(&stackGasLimit)
+	gasLimitOnStack, overflow := stackGasLimit.Uint64WithOverflow()
+	if overflow {
+		gasLimitOnStack = ^uint64(0)
+	}
 	gasLimit, ok := loadAccountAndCalcGas(interp, host, to, transfersValue, false, gasLimitOnStack)
 	if !ok {
 		return
@@ -350,12 +356,15 @@ func opDelegatecall(interp *Interpreter, host Host) {
 		interp.HaltUnderflow()
 		return
 	}
-	to := types.U256ToAddress(&toVal)
+	to := types.Address(toVal.Bytes20())
 	inputRange, outputRange, ok := getMemoryInputAndOutRanges(interp)
 	if !ok {
 		return
 	}
-	gasLimitOnStack := types.U256AsUsizeSaturated(&stackGasLimit)
+	gasLimitOnStack, overflow := stackGasLimit.Uint64WithOverflow()
+	if overflow {
+		gasLimitOnStack = ^uint64(0)
+	}
 	gasLimit, ok := loadAccountAndCalcGas(interp, host, to, false, false, gasLimitOnStack)
 	if !ok {
 		return
@@ -384,12 +393,15 @@ func opStaticcall(interp *Interpreter, host Host) {
 		interp.HaltUnderflow()
 		return
 	}
-	to := types.U256ToAddress(&toVal)
+	to := types.Address(toVal.Bytes20())
 	inputRange, outputRange, ok := getMemoryInputAndOutRanges(interp)
 	if !ok {
 		return
 	}
-	gasLimitOnStack := types.U256AsUsizeSaturated(&stackGasLimit)
+	gasLimitOnStack, overflow := stackGasLimit.Uint64WithOverflow()
+	if overflow {
+		gasLimitOnStack = ^uint64(0)
+	}
 	gasLimit, ok := loadAccountAndCalcGas(interp, host, to, false, false, gasLimitOnStack)
 	if !ok {
 		return
@@ -405,7 +417,7 @@ func opStaticcall(interp *Interpreter, host Host) {
 		BytecodeAddress:    to,
 		TargetAddress:      to,
 		Caller:             interp.Input.TargetAddress,
-		Value:              NewCallValueTransfer(types.U256Zero),
+		Value:              NewCallValueTransfer(uint256.Int{}),
 		Scheme:             CallSchemeStaticCall,
 		IsStatic:           true,
 	})

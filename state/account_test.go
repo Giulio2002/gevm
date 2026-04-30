@@ -9,7 +9,7 @@ import (
 )
 
 func u256(v uint64) uint256.Int {
-	return types.U256From(v)
+	return *uint256.NewInt(v)
 }
 
 func TestAccountIsEmptyBalance(t *testing.T) {
@@ -21,7 +21,7 @@ func TestAccountIsEmptyBalance(t *testing.T) {
 	if acc.IsEmpty() {
 		t.Fatal("account with balance should not be empty")
 	}
-	acc.Info.Balance = types.U256Zero
+	acc.Info.Balance = uint256.Int{}
 	if !acc.IsEmpty() {
 		t.Fatal("account with zero balance should be empty")
 	}
@@ -218,7 +218,7 @@ func TestEvmStorageSlotBasic(t *testing.T) {
 }
 
 func TestEvmStorageSlotWarmCold(t *testing.T) {
-	slot := NewEvmStorageSlot(types.U256Zero, 0)
+	slot := NewEvmStorageSlot(uint256.Int{}, 0)
 	slot.IsCold = true
 	slot.TransactionID = 0
 	if !slot.MarkWarmWithTransactionID(1) {

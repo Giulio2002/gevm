@@ -20,16 +20,16 @@ var (
 	coinbase = types.Address{0xcc}
 )
 
-var hugeBalance = types.U256FromLimbs(0, 0, 1, 0)
+var hugeBalance = uint256.Int{0, 0, 1, 0}
 
 func blockEnv() host.BlockEnv {
-	prevrandao := types.U256Zero
+	prevrandao := uint256.Int{}
 	return host.BlockEnv{
 		Beneficiary: coinbase,
-		GasLimit:    types.U256From(30_000_000),
-		BaseFee:     types.U256From(1),
-		Number:      types.U256From(1),
-		Timestamp:   types.U256From(1000),
+		GasLimit:    *uint256.NewInt(30_000_000),
+		BaseFee:     *uint256.NewInt(1),
+		Number:      *uint256.NewInt(1),
+		Timestamp:   *uint256.NewInt(1000),
 		Prevrandao:  &prevrandao,
 	}
 }
@@ -43,13 +43,13 @@ func runTraced(t *testing.T, code []byte, cfg vm.LogConfig) (*host.ExecutionResu
 		CodeHash: types.KeccakEmpty,
 	}, nil)
 	db.InsertAccount(contract, state.AccountInfo{
-		Balance:  types.U256Zero,
+		Balance:  uint256.Int{},
 		Code:     code,
 		CodeHash: codeHash,
 	}, nil)
 
 	logger := vm.NewStructLogger(cfg)
-	evm := host.NewEvm(db, spec.Prague, blockEnv(), host.CfgEnv{ChainId: types.U256From(1)})
+	evm := host.NewEvm(db, spec.Prague, blockEnv(), host.CfgEnv{ChainId: *uint256.NewInt(1)})
 	evm.Set(vm.NewTracingRunner(logger.Hooks(), spec.Prague))
 	defer evm.ReleaseEvm()
 
@@ -58,7 +58,7 @@ func runTraced(t *testing.T, code []byte, cfg vm.LogConfig) (*host.ExecutionResu
 		Caller:   caller,
 		To:       contract,
 		GasLimit: 1_000_000,
-		GasPrice: types.U256From(1),
+		GasPrice: *uint256.NewInt(1),
 	}
 	result := evm.Transact(&tx)
 	return &result, logger
@@ -117,7 +117,7 @@ func TestTraceSimpleReturn(t *testing.T) {
 	if len(logs[1].Stack) != 1 {
 		t.Errorf("step 1 should have 1 stack item, got %d", len(logs[1].Stack))
 	}
-	if logs[1].Stack[0] != types.U256From(0x42) {
+	if logs[1].Stack[0] != *uint256.NewInt(0x42) {
 		t.Errorf("step 1 stack[0] = %v, want 0x42", logs[1].Stack[0])
 	}
 
@@ -175,7 +175,7 @@ func TestTraceArithmetic(t *testing.T) {
 	if len(logs[3].Stack) != 1 {
 		t.Fatalf("step 3 (STOP) should see 1 stack item, got %d", len(logs[3].Stack))
 	}
-	if logs[3].Stack[0] != types.U256From(7) {
+	if logs[3].Stack[0] != *uint256.NewInt(7) {
 		t.Errorf("step 3 stack[0] = %v, want 7", logs[3].Stack[0])
 	}
 }
@@ -257,7 +257,7 @@ func TestTraceTxStartEnd(t *testing.T) {
 		},
 	}
 
-	evm := host.NewEvm(db, spec.Prague, blockEnv(), host.CfgEnv{ChainId: types.U256From(1)})
+	evm := host.NewEvm(db, spec.Prague, blockEnv(), host.CfgEnv{ChainId: *uint256.NewInt(1)})
 	evm.Set(vm.NewTracingRunner(hooks, spec.Prague))
 	defer evm.ReleaseEvm()
 
@@ -266,7 +266,7 @@ func TestTraceTxStartEnd(t *testing.T) {
 		Caller:   caller,
 		To:       contract,
 		GasLimit: 100_000,
-		GasPrice: types.U256From(1),
+		GasPrice: *uint256.NewInt(1),
 	}
 	result := evm.Transact(&tx)
 
@@ -309,7 +309,7 @@ func TestTraceEnterExit(t *testing.T) {
 		},
 	}
 
-	evm := host.NewEvm(db, spec.Prague, blockEnv(), host.CfgEnv{ChainId: types.U256From(1)})
+	evm := host.NewEvm(db, spec.Prague, blockEnv(), host.CfgEnv{ChainId: *uint256.NewInt(1)})
 	evm.Set(vm.NewTracingRunner(hooks, spec.Prague))
 	defer evm.ReleaseEvm()
 
@@ -318,7 +318,7 @@ func TestTraceEnterExit(t *testing.T) {
 		Caller:   caller,
 		To:       contract,
 		GasLimit: 100_000,
-		GasPrice: types.U256From(1),
+		GasPrice: *uint256.NewInt(1),
 	}
 	evm.Transact(&tx)
 
@@ -370,7 +370,7 @@ func TestTraceNestedCall(t *testing.T) {
 		OnExit: func(depth int, output []byte, gasUsed uint64, err error, reverted bool) {},
 	}
 
-	evm := host.NewEvm(db, spec.Prague, blockEnv(), host.CfgEnv{ChainId: types.U256From(1)})
+	evm := host.NewEvm(db, spec.Prague, blockEnv(), host.CfgEnv{ChainId: *uint256.NewInt(1)})
 	evm.Set(vm.NewTracingRunner(hooks, spec.Prague))
 	defer evm.ReleaseEvm()
 
@@ -379,7 +379,7 @@ func TestTraceNestedCall(t *testing.T) {
 		Caller:   caller,
 		To:       contract,
 		GasLimit: 200_000,
-		GasPrice: types.U256From(1),
+		GasPrice: *uint256.NewInt(1),
 	}
 	result := evm.Transact(&tx)
 
@@ -455,7 +455,7 @@ func TestTraceNoHooksOverhead(t *testing.T) {
 	db.InsertAccount(contract, state.AccountInfo{Code: code, CodeHash: codeHash}, nil)
 
 	// Run WITHOUT hooks (normal path)
-	evm := host.NewEvm(db, spec.Prague, blockEnv(), host.CfgEnv{ChainId: types.U256From(1)})
+	evm := host.NewEvm(db, spec.Prague, blockEnv(), host.CfgEnv{ChainId: *uint256.NewInt(1)})
 	defer evm.ReleaseEvm()
 
 	tx := host.Transaction{
@@ -463,7 +463,7 @@ func TestTraceNoHooksOverhead(t *testing.T) {
 		Caller:   caller,
 		To:       contract,
 		GasLimit: 1_000_000,
-		GasPrice: types.U256From(1),
+		GasPrice: *uint256.NewInt(1),
 	}
 	result := evm.Transact(&tx)
 	if !result.IsSuccess() {

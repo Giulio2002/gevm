@@ -3,8 +3,6 @@ package spec
 import (
 	"github.com/holiman/uint256"
 	"math/bits"
-
-	"github.com/Giulio2002/gevm/types"
 )
 
 // GasId is an index into the 256-entry gas parameter table.
@@ -261,16 +259,16 @@ type SStoreResult struct {
 	NewValue      uint256.Int
 }
 
-func (s *SStoreResult) IsOriginalZero() bool { return types.IsZeroPtr(&s.OriginalValue) }
-func (s *SStoreResult) IsPresentZero() bool  { return types.IsZeroPtr(&s.PresentValue) }
-func (s *SStoreResult) IsNewZero() bool      { return types.IsZeroPtr(&s.NewValue) }
+func (s *SStoreResult) IsOriginalZero() bool { return s.OriginalValue.IsZero() }
+func (s *SStoreResult) IsPresentZero() bool  { return s.PresentValue.IsZero() }
+func (s *SStoreResult) IsNewZero() bool      { return s.NewValue.IsZero() }
 func (s *SStoreResult) IsOriginalEqPresent() bool {
-	return types.EqPtr(&s.OriginalValue, &s.PresentValue)
+	return s.OriginalValue.Eq(&s.PresentValue)
 }
-func (s *SStoreResult) IsOriginalEqNew() bool { return types.EqPtr(&s.OriginalValue, &s.NewValue) }
-func (s *SStoreResult) IsNewEqPresent() bool  { return types.EqPtr(&s.NewValue, &s.PresentValue) }
+func (s *SStoreResult) IsOriginalEqNew() bool { return s.OriginalValue.Eq(&s.NewValue) }
+func (s *SStoreResult) IsNewEqPresent() bool  { return s.NewValue.Eq(&s.PresentValue) }
 func (s *SStoreResult) NewValuesChangesPresent() bool {
-	return !types.EqPtr(&s.NewValue, &s.PresentValue)
+	return !s.NewValue.Eq(&s.PresentValue)
 }
 
 // SstoreDynamicGas calculates the dynamic SSTORE gas cost.

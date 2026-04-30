@@ -3,8 +3,6 @@ package spec
 import (
 	"github.com/holiman/uint256"
 	"testing"
-
-	"github.com/Giulio2002/gevm/types"
 )
 
 func TestNewGasParamsFrontier(t *testing.T) {
@@ -101,23 +99,23 @@ func TestExpCost(t *testing.T) {
 	g := NewGasParams(SpuriousDragon)
 
 	// power = 0 → cost = 0
-	if g.ExpCost(types.U256Zero) != 0 {
-		t.Errorf("exp_cost(0): got %d, want 0", g.ExpCost(types.U256Zero))
+	if g.ExpCost(uint256.Int{}) != 0 {
+		t.Errorf("exp_cost(0): got %d, want 0", g.ExpCost(uint256.Int{}))
 	}
 
 	// power = 1 → log2floor = 0, cost = 50 * (0/8 + 1) = 50
-	if g.ExpCost(types.U256One) != 50 {
-		t.Errorf("exp_cost(1): got %d, want 50", g.ExpCost(types.U256One))
+	if g.ExpCost(uint256.Int{1, 0, 0, 0}) != 50 {
+		t.Errorf("exp_cost(1): got %d, want 50", g.ExpCost(uint256.Int{1, 0, 0, 0}))
 	}
 
 	// power = 255 → log2floor = 7, cost = 50 * (7/8 + 1) = 50
-	if g.ExpCost(types.U256From(255)) != 50 {
-		t.Errorf("exp_cost(255): got %d, want 50", g.ExpCost(types.U256From(255)))
+	if g.ExpCost(*uint256.NewInt(255)) != 50 {
+		t.Errorf("exp_cost(255): got %d, want 50", g.ExpCost(*uint256.NewInt(255)))
 	}
 
 	// power = 256 → log2floor = 8, cost = 50 * (8/8 + 1) = 100
-	if g.ExpCost(types.U256From(256)) != 100 {
-		t.Errorf("exp_cost(256): got %d, want 100", g.ExpCost(types.U256From(256)))
+	if g.ExpCost(*uint256.NewInt(256)) != 100 {
+		t.Errorf("exp_cost(256): got %d, want 100", g.ExpCost(*uint256.NewInt(256)))
 	}
 }
 
@@ -171,11 +169,11 @@ func TestLog2floor(t *testing.T) {
 		val  uint256.Int
 		want uint64
 	}{
-		{types.U256From(1), 0},
-		{types.U256From(2), 1},
-		{types.U256From(255), 7},
-		{types.U256From(256), 8},
-		{types.U256Max, 255},
+		{*uint256.NewInt(1), 0},
+		{*uint256.NewInt(2), 1},
+		{*uint256.NewInt(255), 7},
+		{*uint256.NewInt(256), 8},
+		{uint256.Int{^uint64(0), ^uint64(0), ^uint64(0), ^uint64(0)}, 255},
 	}
 	for _, tc := range cases {
 		got := log2floor(tc.val)

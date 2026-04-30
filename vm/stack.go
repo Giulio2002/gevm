@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"github.com/holiman/uint256"
 	"strings"
-
-	"github.com/Giulio2002/gevm/types"
 )
 
 // StackLimit is the maximum stack depth (1024 words).
@@ -56,7 +54,7 @@ func (s *Stack) Push(value uint256.Int) bool {
 // Pop removes and returns the top value. Returns false if empty.
 func (s *Stack) Pop() (uint256.Int, bool) {
 	if s.top == 0 {
-		return types.U256Zero, false
+		return uint256.Int{}, false
 	}
 	s.top--
 	return s.data[s.top], true
@@ -101,7 +99,7 @@ func (s *Stack) Popn(n int) []uint256.Int {
 // Pop1 pops 1 value from the stack. Returns false if underflow.
 func (s *Stack) Pop1() (uint256.Int, bool) {
 	if s.top < 1 {
-		return types.U256Zero, false
+		return uint256.Int{}, false
 	}
 	return s.PopUnsafe(), true
 }
@@ -109,7 +107,7 @@ func (s *Stack) Pop1() (uint256.Int, bool) {
 // Pop2 pops 2 values from the stack. Returns false if underflow.
 func (s *Stack) Pop2() (uint256.Int, uint256.Int, bool) {
 	if s.top < 2 {
-		return types.U256Zero, types.U256Zero, false
+		return uint256.Int{}, uint256.Int{}, false
 	}
 	a := s.PopUnsafe()
 	b := s.PopUnsafe()
@@ -119,7 +117,7 @@ func (s *Stack) Pop2() (uint256.Int, uint256.Int, bool) {
 // Pop3 pops 3 values from the stack. Returns false if underflow.
 func (s *Stack) Pop3() (uint256.Int, uint256.Int, uint256.Int, bool) {
 	if s.top < 3 {
-		return types.U256Zero, types.U256Zero, types.U256Zero, false
+		return uint256.Int{}, uint256.Int{}, uint256.Int{}, false
 	}
 	a := s.PopUnsafe()
 	b := s.PopUnsafe()
@@ -143,7 +141,7 @@ func (s *Stack) PopnTop(n int) ([]uint256.Int, *uint256.Int) {
 // Pop1Top pops 1 value and returns a pointer to the new top.
 func (s *Stack) Pop1Top() (uint256.Int, *uint256.Int, bool) {
 	if s.top < 2 {
-		return types.U256Zero, nil, false
+		return uint256.Int{}, nil, false
 	}
 	a := s.PopUnsafe()
 	return a, s.TopUnsafe(), true
@@ -152,7 +150,7 @@ func (s *Stack) Pop1Top() (uint256.Int, *uint256.Int, bool) {
 // Pop2Top pops 2 values and returns a pointer to the new top.
 func (s *Stack) Pop2Top() (uint256.Int, uint256.Int, *uint256.Int, bool) {
 	if s.top < 3 {
-		return types.U256Zero, types.U256Zero, nil, false
+		return uint256.Int{}, uint256.Int{}, nil, false
 	}
 	a := s.PopUnsafe()
 	b := s.PopUnsafe()
@@ -162,7 +160,7 @@ func (s *Stack) Pop2Top() (uint256.Int, uint256.Int, *uint256.Int, bool) {
 // Peek returns the value at the given index from the top (0 = top).
 func (s *Stack) Peek(noFromTop int) (uint256.Int, bool) {
 	if s.top <= noFromTop {
-		return types.U256Zero, false
+		return uint256.Int{}, false
 	}
 	return s.data[s.top-noFromTop-1], true
 }
@@ -219,7 +217,7 @@ func (s *Stack) PushSlice(slice []byte) bool {
 	if s.top+1 > StackLimit {
 		return false
 	}
-	val := types.U256FromBytes(slice)
+	val := *new(uint256.Int).SetBytes(slice)
 	s.data[s.top] = val
 	s.top++
 	return true

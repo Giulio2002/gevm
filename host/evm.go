@@ -285,7 +285,10 @@ func (evm *Evm) Transact(tx *Transaction) ExecutionResult {
 	}
 
 	// Check tx gas limit <= block gas limit
-	blockGasLimit := types.U256AsUsize(&evm.Block.GasLimit)
+	blockGasLimit, overflow := evm.Block.GasLimit.Uint64WithOverflow()
+	if overflow {
+		blockGasLimit = ^uint64(0)
+	}
 	if tx.GasLimit > blockGasLimit {
 		return haltResult(vm.InstructionResultGasLimitTooHigh)
 	}
@@ -338,23 +341,26 @@ func (evm *Evm) Transact(tx *Transaction) ExecutionResult {
 	default:
 		maxGasPrice = tx.GasPrice
 	}
-	gasLimitU := types.U256From(tx.GasLimit)
-	maxFee := types.Mul(&maxGasPrice, &gasLimitU)
+	gasLimitU := *uint256.NewInt(tx.GasLimit)
+	var maxFee uint256.Int
+	maxFee.Mul(&maxGasPrice, &gasLimitU)
 	// Check for overflow: if gasPrice * gasLimit < gasPrice (and gasLimit > 0), overflow occurred
 	if tx.GasLimit > 0 && maxFee.Lt(&maxGasPrice) {
 		return haltResult(vm.InstructionResultOutOfFunds)
 	}
 	// EIP-4844: include max blob gas cost in balance check
 	if tx.TxType == TxTypeEIP4844 && len(tx.BlobHashes) > 0 {
-		totalBlobGas := types.U256From(uint64(len(tx.BlobHashes)) * 131072)
-		maxBlobCost := types.Mul(&tx.MaxFeePerBlobGas, &totalBlobGas)
+		totalBlobGas := *uint256.NewInt(uint64(len(tx.BlobHashes)) * 131072)
+		var maxBlobCost uint256.Int
+		maxBlobCost.Mul(&tx.MaxFeePerBlobGas, &totalBlobGas)
 		maxFee.Add(&maxFee, &maxBlobCost)
 		// Overflow check
 		if maxFee.Lt(&maxBlobCost) {
 			return haltResult(vm.InstructionResultOutOfFunds)
 		}
 	}
-	totalCost := types.Add(&maxFee, &tx.Value)
+	var totalCost uint256.Int
+	totalCost.Add(&maxFee, &tx.Value)
 	// Check for overflow in addition: if totalCost < maxFee, overflow occurred
 	if totalCost.Lt(&maxFee) {
 		return haltResult(vm.InstructionResultOutOfFunds)
@@ -365,13 +371,14 @@ func (evm *Evm) Transact(tx *Transaction) ExecutionResult {
 
 	// Deduct gas costs from caller balance (using effective gas price).
 	// Only gas costs are deducted here; value transfer happens during CALL/CREATE execution.
-	gasDeduction := types.Mul(&effectiveGasPrice, &gasLimitU)
+	var gasDeduction uint256.Int
+	gasDeduction.Mul(&effectiveGasPrice, &gasLimitU)
 
 	// EIP-4844: deduct blob gas cost
 	var blobGasCost uint256.Int
 	if tx.TxType == TxTypeEIP4844 && len(tx.BlobHashes) > 0 {
-		totalBlobGas := types.U256From(uint64(len(tx.BlobHashes)) * 131072) // GAS_PER_BLOB = 2^17
-		blobGasCost = types.Mul(&evm.Block.BlobGasPrice, &totalBlobGas)
+		totalBlobGas := *uint256.NewInt(uint64(len(tx.BlobHashes)) * 131072) // GAS_PER_BLOB = 2^17
+		blobGasCost.Mul(&evm.Block.BlobGasPrice, &totalBlobGas)
 		gasDeduction.Add(&gasDeduction, &blobGasCost)
 	}
 
@@ -525,8 +532,9 @@ func (evm *Evm) Transact(tx *Transaction) ExecutionResult {
 	if gas.Refunded() > 0 {
 		reimburseGas += uint64(gas.Refunded())
 	}
-	reimburseGasU := types.U256From(reimburseGas)
-	refundAmount := types.Mul(&effectiveGasPrice, &reimburseGasU)
+	reimburseGasU := *uint256.NewInt(reimburseGas)
+	var refundAmount uint256.Int
+	refundAmount.Mul(&effectiveGasPrice, &reimburseGasU)
 	callerReload, _ := evm.Journal.LoadAccount(tx.Caller)
 	callerReload.Data.Info.Balance.Add(&callerReload.Data.Info.Balance, &refundAmount)
 
@@ -687,8 +695,9 @@ func (evm *Evm) rewardBeneficiary(gasPrice uint256.Int, gasUsed uint64) {
 		effectivePrice = gasPrice
 	}
 
-	gasUsedU := types.U256From(gasUsed)
-	reward := types.Mul(&effectivePrice, &gasUsedU)
+	gasUsedU := *uint256.NewInt(gasUsed)
+	var reward uint256.Int
+	reward.Mul(&effectivePrice, &gasUsedU)
 
 	// Skip loading the beneficiary account if reward is zero.
 	// LoadAccount without a subsequent touch has no observable state effect.

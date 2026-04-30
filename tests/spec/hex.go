@@ -39,7 +39,7 @@ func (h *HexU256) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return fmt.Errorf("HexU256: %w", err)
 	}
-	h.V = types.U256FromBytes(b)
+	h.V = *new(uint256.Int).SetBytes(b)
 	return nil
 }
 

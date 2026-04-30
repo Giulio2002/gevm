@@ -39,7 +39,7 @@ func DefaultAccountInfo() AccountInfo {
 // IsEmpty returns true if balance is zero, nonce is zero, and code hash is empty/zero.
 func (info *AccountInfo) IsEmpty() bool {
 	codeEmpty := info.CodeHash == types.KeccakEmpty || info.CodeHash.IsZero()
-	return codeEmpty && info.Balance == types.U256Zero && info.Nonce == 0
+	return codeEmpty && info.Balance == (uint256.Int{}) && info.Nonce == 0
 }
 
 // IsEmptyCodeHash returns true if the code hash is KECCAK_EMPTY.

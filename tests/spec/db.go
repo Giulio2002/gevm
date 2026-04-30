@@ -67,11 +67,11 @@ func (db *MemDB) CodeByHash(codeHash types.B256) (types.Bytes, error) {
 func (db *MemDB) Storage(address types.Address, index uint256.Int) (uint256.Int, error) {
 	acc, ok := db.accounts[address]
 	if !ok {
-		return types.U256Zero, nil
+		return uint256.Int{}, nil
 	}
 	v, ok := acc.storage[index]
 	if !ok {
-		return types.U256Zero, nil
+		return uint256.Int{}, nil
 	}
 	return v, nil
 }

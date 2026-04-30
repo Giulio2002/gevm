@@ -722,14 +722,14 @@ func (j *Journal) TLoad(address types.Address, key uint256.Int) uint256.Int {
 	if val, ok := j.TransientStorage[tkey]; ok {
 		return val
 	}
-	return types.U256Zero
+	return uint256.Int{}
 }
 
 // TStore writes a transient storage value.
 func (j *Journal) TStore(address types.Address, key, newValue uint256.Int) {
 	tkey := TransientKey{Address: address, Key: key}
 
-	if newValue == types.U256Zero {
+	if newValue == (uint256.Int{}) {
 		// Remove entry if new value is zero.
 		if old, ok := j.TransientStorage[tkey]; ok {
 			delete(j.TransientStorage, tkey)
@@ -738,7 +738,7 @@ func (j *Journal) TStore(address types.Address, key, newValue uint256.Int) {
 	} else {
 		old, existed := j.TransientStorage[tkey]
 		if !existed {
-			old = types.U256Zero
+			old = uint256.Int{}
 		}
 		j.TransientStorage[tkey] = newValue
 		if old != newValue {
@@ -793,7 +793,7 @@ func (j *Journal) TransferLoaded(from, to types.Address, balance uint256.Int) *T
 		return nil
 	}
 
-	if balance == types.U256Zero {
+	if balance == (uint256.Int{}) {
 		j.touchAccount(to, j.State[to])
 		return nil
 	}
@@ -801,7 +801,8 @@ func (j *Journal) TransferLoaded(from, to types.Address, balance uint256.Int) *T
 	// Sub balance from sender.
 	fromAcc := j.State[from]
 	j.touchAccount(from, fromAcc)
-	newFromBalance, underflow := types.OverflowingSub(&fromAcc.Info.Balance, &balance)
+	var newFromBalance uint256.Int
+	_, underflow := newFromBalance.SubOverflow(&fromAcc.Info.Balance, &balance)
 	if underflow {
 		e := TransferErrorOutOfFunds
 		return &e
@@ -811,7 +812,8 @@ func (j *Journal) TransferLoaded(from, to types.Address, balance uint256.Int) *T
 	// Add balance to receiver.
 	toAcc := j.State[to]
 	j.touchAccount(to, toAcc)
-	newToBalance, overflow := types.OverflowingAdd(&toAcc.Info.Balance, &balance)
+	var newToBalance uint256.Int
+	_, overflow := newToBalance.AddOverflow(&toAcc.Info.Balance, &balance)
 	if overflow {
 		e := TransferErrorOverflowPayment
 		return &e
@@ -862,16 +864,16 @@ func (j *Journal) Selfdestruct(address, target types.Address) (StateLoad[SelfDes
 	// EIP-6780: selfdestruct only if created in same tx (post-Cancun).
 	if acc.IsCreatedLocally() || !isCancunEnabled {
 		acc.MarkSelfdestructedLocally()
-		acc.Info.Balance = types.U256Zero
+		acc.Info.Balance = uint256.Int{}
 		j.Entries = append(j.Entries, JournalEntryAccountDestroyed(address, target, destroyedStatus, balance))
 	} else if address != target {
-		acc.Info.Balance = types.U256Zero
+		acc.Info.Balance = uint256.Int{}
 		j.Entries = append(j.Entries, JournalEntryBalanceTransfer(address, target, balance))
 	}
 	// else: post-Cancun, not created locally, target == self → no state change.
 
 	return NewStateLoad(SelfDestructResult{
-		HadValue:            balance != types.U256Zero,
+		HadValue:            balance != (uint256.Int{}),
 		TargetExists:        !isEmpty,
 		PreviouslyDestroyed: destroyedStatus == SelfdestructRepeated,
 	}, isCold), nil
@@ -904,12 +906,13 @@ func (j *Journal) CreateAccountCheckpoint(caller, targetAddress types.Address, b
 
 	j.touchAccount(targetAddress, targetAcc)
 
-	if balance == types.U256Zero {
+	if balance == (uint256.Int{}) {
 		return checkpoint, nil
 	}
 
 	// Add balance to target.
-	newBalance, overflow := types.OverflowingAdd(&targetAcc.Info.Balance, &balance)
+	var newBalance uint256.Int
+	_, overflow := newBalance.AddOverflow(&targetAcc.Info.Balance, &balance)
 	if overflow {
 		j.CheckpointRevert(checkpoint)
 		e := TransferErrorOverflowPayment

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Giulio2002/gevm/types"
+	"github.com/holiman/uint256"
 )
 
 // TestRlpDecode tests basic RLP decoding.
@@ -158,10 +159,10 @@ func TestSigningHashLegacy(t *testing.T) {
 	tx := &DecodedTx{
 		TxType:   0,
 		Nonce:    0,
-		GasPrice: types.U256From(1),
+		GasPrice: *uint256.NewInt(1),
 		GasLimit: 21000,
-		Value:    types.U256Zero,
-		V:        types.U256From(27),
+		Value:    uint256.Int{},
+		V:        *uint256.NewInt(27),
 	}
 	// Not checking the exact hash value, just that it doesn't panic
 	hash := SigningHash(tx)

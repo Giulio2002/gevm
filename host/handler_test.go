@@ -8,6 +8,7 @@ import (
 	"github.com/Giulio2002/gevm/state"
 	"github.com/Giulio2002/gevm/types"
 	"github.com/Giulio2002/gevm/vm"
+	"github.com/holiman/uint256"
 )
 
 // --- Test helpers ---
@@ -84,7 +85,7 @@ func TestCallEmptyAccount(t *testing.T) {
 		BytecodeAddress:    addr(0x42),
 		TargetAddress:      addr(0x42),
 		Caller:             addr(0x01),
-		Value:              vm.NewCallValueTransfer(types.U256Zero),
+		Value:              vm.NewCallValueTransfer(uint256.Int{}),
 		Scheme:             vm.CallSchemeCall,
 		IsStatic:           false,
 	}), 0, handler.RootMemory)
@@ -115,7 +116,7 @@ func TestCallWithBytecode(t *testing.T) {
 		BytecodeAddress: addr(0x42),
 		TargetAddress:   addr(0x42),
 		Caller:          addr(0x01),
-		Value:           vm.NewCallValueTransfer(types.U256Zero),
+		Value:           vm.NewCallValueTransfer(uint256.Int{}),
 		Scheme:          vm.CallSchemeCall,
 	}), 0, handler.RootMemory)
 
@@ -139,7 +140,7 @@ func TestCallReturnsData(t *testing.T) {
 		BytecodeAddress: addr(0x42),
 		TargetAddress:   addr(0x42),
 		Caller:          addr(0x01),
-		Value:           vm.NewCallValueTransfer(types.U256Zero),
+		Value:           vm.NewCallValueTransfer(uint256.Int{}),
 		Scheme:          vm.CallSchemeCall,
 	}), 0, handler.RootMemory)
 
@@ -160,7 +161,7 @@ func TestCallDepthLimit(t *testing.T) {
 		BytecodeAddress: addr(0x42),
 		TargetAddress:   addr(0x42),
 		Caller:          addr(0x01),
-		Value:           vm.NewCallValueTransfer(types.U256Zero),
+		Value:           vm.NewCallValueTransfer(uint256.Int{}),
 		Scheme:          vm.CallSchemeCall,
 	}), CallStackLimit+1, handler.RootMemory)
 
@@ -477,7 +478,7 @@ func TestCreate2Address(t *testing.T) {
 	}
 	handler, _ := makeHandler(db, spec.Shanghai)
 
-	salt := types.U256From(0x42)
+	salt := *uint256.NewInt(0x42)
 	initCode := bytecodeStop()
 
 	result := execFrame(handler, vm.NewFrameInputCreate(vm.CreateInputs{
@@ -645,7 +646,7 @@ func TestHandlerCallReturnGas(t *testing.T) {
 		BytecodeAddress: addr(0x42),
 		TargetAddress:   addr(0x42),
 		Caller:          addr(0x01),
-		Value:           vm.NewCallValueTransfer(types.U256Zero),
+		Value:           vm.NewCallValueTransfer(uint256.Int{}),
 		Scheme:          vm.CallSchemeCall,
 	}), 0, handler.RootMemory)
 
@@ -709,7 +710,7 @@ func TestCallPrecompileIdentity(t *testing.T) {
 		BytecodeAddress:    addr(0x04), // IDENTITY precompile
 		TargetAddress:      addr(0x04),
 		Caller:             addr(0x01),
-		Value:              vm.NewCallValueTransfer(types.U256Zero),
+		Value:              vm.NewCallValueTransfer(uint256.Int{}),
 		Scheme:             vm.CallSchemeCall,
 	}), 0, handler.RootMemory)
 
@@ -741,7 +742,7 @@ func TestCallPrecompileSha256(t *testing.T) {
 		BytecodeAddress: addr(0x02), // SHA256 precompile
 		TargetAddress:   addr(0x02),
 		Caller:          addr(0x01),
-		Value:           vm.NewCallValueTransfer(types.U256Zero),
+		Value:           vm.NewCallValueTransfer(uint256.Int{}),
 		Scheme:          vm.CallSchemeCall,
 	}), 0, handler.RootMemory)
 
@@ -767,7 +768,7 @@ func TestCallPrecompileOOG(t *testing.T) {
 		BytecodeAddress: addr(0x04),
 		TargetAddress:   addr(0x04),
 		Caller:          addr(0x01),
-		Value:           vm.NewCallValueTransfer(types.U256Zero),
+		Value:           vm.NewCallValueTransfer(uint256.Int{}),
 		Scheme:          vm.CallSchemeCall,
 	}), 0, handler.RootMemory)
 
@@ -791,7 +792,7 @@ func TestCallNonPrecompileAddress(t *testing.T) {
 		BytecodeAddress: addr(0x42),
 		TargetAddress:   addr(0x42),
 		Caller:          addr(0x01),
-		Value:           vm.NewCallValueTransfer(types.U256Zero),
+		Value:           vm.NewCallValueTransfer(uint256.Int{}),
 		Scheme:          vm.CallSchemeCall,
 	}), 0, handler.RootMemory)
 
