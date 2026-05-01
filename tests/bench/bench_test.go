@@ -88,6 +88,14 @@ func benchmarkCodeWithInput(b *testing.B, forkID spec.ForkID, gasLimit uint64, c
 }
 
 func benchmarkCodeWithInputRunner(b *testing.B, forkID spec.ForkID, gasLimit uint64, contractCode []byte, input []byte, runner vm.Runner) {
+	benchmarkCodeFull(b, forkID, gasLimit, contractCode, input, nil, nil, runner)
+}
+
+func benchmarkCodeWithStorage(b *testing.B, forkID spec.ForkID, gasLimit uint64, contractCode []byte, storage map[uint256.Int]uint256.Int, accessList []host.AccessListItem) {
+	benchmarkCodeFull(b, forkID, gasLimit, contractCode, nil, storage, accessList, nil)
+}
+
+func benchmarkCodeFull(b *testing.B, forkID spec.ForkID, gasLimit uint64, contractCode []byte, input []byte, storage map[uint256.Int]uint256.Int, accessList []host.AccessListItem, runner vm.Runner) {
 	codeHash := types.Keccak256(contractCode)
 	block := blockEnvForSpec(forkID)
 	cfg := defaultCfgEnv()
@@ -96,7 +104,7 @@ func benchmarkCodeWithInputRunner(b *testing.B, forkID spec.ForkID, gasLimit uin
 	db.InsertAccount(benchContract, state.AccountInfo{
 		Code:     contractCode,
 		CodeHash: codeHash,
-	}, nil)
+	}, storage)
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -106,13 +114,14 @@ func benchmarkCodeWithInputRunner(b *testing.B, forkID spec.ForkID, gasLimit uin
 			evm.Set(runner)
 		}
 		evm.Transact(&host.Transaction{
-			Kind:     host.TxKindCall,
-			TxType:   host.TxTypeLegacy,
-			Caller:   benchCaller,
-			To:       benchContract,
-			Input:    input,
-			GasLimit: gasLimit,
-			GasPrice: *uint256.NewInt(1),
+			Kind:       host.TxKindCall,
+			TxType:     host.TxTypeLegacy,
+			Caller:     benchCaller,
+			To:         benchContract,
+			Input:      input,
+			AccessList: accessList,
+			GasLimit:   gasLimit,
+			GasPrice:   *uint256.NewInt(1),
 		})
 		evm.ReleaseEvm()
 	}
@@ -219,6 +228,56 @@ func returnDataCopyLoop(length byte) []byte {
 		0x60, 0x00, // PUSH1 return-data offset
 		0x60, 0x00, // PUSH1 memory offset
 		0x3E, // RETURNDATACOPY
+	)
+}
+
+func callDataLoadLoop(offset byte) []byte {
+	return opcodeLoop(
+		0x60, offset, // PUSH1 offset
+		0x35, // CALLDATALOAD
+		0x50, // POP
+	)
+}
+
+func keccakLoop(length byte) []byte {
+	return opcodeLoop(
+		0x60, length, // PUSH1 length
+		0x60, 0x00, // PUSH1 offset
+		0x20, // KECCAK256
+		0x50, // POP
+	)
+}
+
+func callLoop(addr byte) []byte {
+	return []byte{
+		0x5B,       // JUMPDEST
+		0x60, 0x00, // PUSH1 0 (retSize)
+		0x60, 0x00, // PUSH1 0 (retOffset)
+		0x60, 0x00, // PUSH1 0 (argsSize)
+		0x60, 0x00, // PUSH1 0 (argsOffset)
+		0x60, 0x00, // PUSH1 0 (value)
+		0x60, addr, // PUSH1 address
+		0x5A,       // GAS
+		0xF1,       // CALL
+		0x50,       // POP
+		0x60, 0x00, // PUSH1 0
+		0x56, // JUMP
+	}
+}
+
+func sloadLoop(slot byte) []byte {
+	return opcodeLoop(
+		0x60, slot, // PUSH1 slot
+		0x54, // SLOAD
+		0x50, // POP
+	)
+}
+
+func sstoreLoop(slot, value byte) []byte {
+	return opcodeLoop(
+		0x60, value, // PUSH1 value
+		0x60, slot, // PUSH1 slot
+		0x55, // SSTORE
 	)
 }
 
@@ -343,6 +402,66 @@ func BenchmarkDataMovement(b *testing.B) {
 	})
 	b.Run("MCOPY32", func(b *testing.B) {
 		benchmarkCode(b, spec.Cancun, 10_000_000, copyLoop(0x5E, 32))
+	})
+}
+
+func BenchmarkCallDataLoad(b *testing.B) {
+	input := make([]byte, 64)
+	for i := range input {
+		input[i] = byte(i + 1)
+	}
+	b.Run("inbounds32", func(b *testing.B) {
+		benchmarkCodeWithInput(b, spec.Cancun, 10_000_000, callDataLoadLoop(0), input)
+	})
+	b.Run("partial", func(b *testing.B) {
+		benchmarkCodeWithInput(b, spec.Cancun, 10_000_000, callDataLoadLoop(48), input)
+	})
+	b.Run("oob", func(b *testing.B) {
+		benchmarkCodeWithInput(b, spec.Cancun, 10_000_000, callDataLoadLoop(96), input)
+	})
+}
+
+func BenchmarkKeccakSizes(b *testing.B) {
+	for _, tc := range []struct {
+		name   string
+		length byte
+	}{
+		{"0", 0},
+		{"32", 32},
+		{"64", 64},
+	} {
+		b.Run(tc.name, func(b *testing.B) {
+			benchmarkCode(b, spec.Cancun, 10_000_000, keccakLoop(tc.length))
+		})
+	}
+}
+
+func BenchmarkCallPaths(b *testing.B) {
+	b.Run("empty-existing", func(b *testing.B) {
+		benchmarkNonModifyingCode(b, 100_000_000, callLoop(0xE0))
+	})
+	b.Run("nonexistent", func(b *testing.B) {
+		benchmarkNonModifyingCode(b, 100_000_000, callLoop(0xFF))
+	})
+}
+
+func BenchmarkStorageOps(b *testing.B) {
+	slot := *uint256.NewInt(1)
+	storage := map[uint256.Int]uint256.Int{
+		slot: *uint256.NewInt(42),
+	}
+	accessList := []host.AccessListItem{{Address: benchContract, StorageKeys: []uint256.Int{slot}}}
+	b.Run("SLOAD-cold-then-warm", func(b *testing.B) {
+		benchmarkCodeWithStorage(b, spec.Cancun, 10_000_000, sloadLoop(1), storage, nil)
+	})
+	b.Run("SLOAD-warm", func(b *testing.B) {
+		benchmarkCodeWithStorage(b, spec.Cancun, 10_000_000, sloadLoop(1), storage, accessList)
+	})
+	b.Run("SSTORE-noop-warm", func(b *testing.B) {
+		benchmarkCodeWithStorage(b, spec.Cancun, 10_000_000, sstoreLoop(1, 42), storage, accessList)
+	})
+	b.Run("SSTORE-dirty-warm", func(b *testing.B) {
+		benchmarkCodeWithStorage(b, spec.Cancun, 10_000_000, sstoreLoop(1, 43), storage, accessList)
 	})
 }
 

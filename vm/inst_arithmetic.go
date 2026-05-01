@@ -6,6 +6,8 @@ import (
 	"github.com/Giulio2002/gevm/types"
 )
 
+var keccakEmptyU256 = types.KeccakEmpty.ToU256()
+
 // opAdd — BinaryOp body. s.top already decremented.
 func opAdd(interp *Interpreter) {
 	s := interp.Stack
@@ -138,7 +140,9 @@ func opKeccak256(interp *Interpreter) {
 		data := interp.Memory.Slice(offset, length)
 		hash = types.B256(keccak.Sum256(data))
 	} else {
-		hash = types.KeccakEmpty
+		s.data[s.top] = keccakEmptyU256
+		s.top++
+		return
 	}
 	s.data[s.top] = hash.ToU256()
 	s.top++
