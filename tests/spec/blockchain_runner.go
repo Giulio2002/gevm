@@ -135,7 +135,7 @@ func executeBlockchainTest(filePath, testName string, tc *BlockchainTestCase) (r
 	cfgEnv := host.CfgEnv{
 		ChainId: *uint256.NewInt(1), // mainnet
 	}
-	evm := host.NewEvm(db, forkID, genesisBlockEnv, cfgEnv)
+	evm := newTestEVM(db, forkID, genesisBlockEnv, cfgEnv)
 
 	// Determine canonical chain: trace back from lastblockhash to genesis
 	// to find which blocks belong to the canonical chain.
@@ -452,7 +452,11 @@ func executeSystemCall(evm *host.Evm, target types.Address, data []byte) {
 	rootMemory := vm.AcquireMemory()
 	defer vm.ReleaseMemory(rootMemory)
 	handler := host.NewHandler(hostEnv, rootMemory)
-	handler.Runner = vm.DefaultRunner{}
+	if runner := testRunner(evm.ForkID); runner != nil {
+		handler.Runner = runner
+	} else {
+		handler.Runner = vm.DefaultRunner{}
+	}
 
 	// Warm the precompile addresses
 	for _, addr := range handler.Precompiles.WarmAddresses() {

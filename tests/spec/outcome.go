@@ -135,7 +135,7 @@ func executeTestOutcome(
 	cfgEnv := host.CfgEnv{ChainId: unit.ChainId()}
 
 	// Execute
-	evm := host.NewEvm(db, forkID, blockEnv, cfgEnv)
+	evm := newTestEVM(db, forkID, blockEnv, cfgEnv)
 	execResult := evm.Transact(&tx)
 
 	// Capture results

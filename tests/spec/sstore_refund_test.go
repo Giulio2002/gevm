@@ -42,7 +42,7 @@ func TestSstoreRefundBasic(t *testing.T) {
 	}
 	cfgEnv := host.CfgEnv{ChainId: *uint256.NewInt(1)}
 
-	evm := host.NewEvm(db, forkID, blockEnv, cfgEnv)
+	evm := newTestEVM(db, forkID, blockEnv, cfgEnv)
 	tx := host.Transaction{
 		Kind:     host.TxKindCall,
 		TxType:   host.TxTypeLegacy,
@@ -112,7 +112,7 @@ func TestSstoreRefundAfterSubcall(t *testing.T) {
 		Code:     calleeCode,
 	}, nil)
 
-	evm := host.NewEvm(db, gevmspec.Cancun, host.BlockEnv{
+	evm := newTestEVM(db, gevmspec.Cancun, host.BlockEnv{
 		Number:   *uint256.NewInt(1),
 		GasLimit: *uint256.NewInt(1_000_000),
 		BaseFee:  *uint256.NewInt(1),

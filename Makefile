@@ -2,6 +2,7 @@ FIXTURES_DIR := $(CURDIR)/tests/fixtures/ethereum-tests
 EEST_DIR := $(CURDIR)/tests/fixtures/execution-spec-tests
 EEST_FIXTURES := $(EEST_DIR)/fixtures
 EEST_VERSION := v5.4.0
+ETHEREUM_TESTS_VERSION := v17.1
 GOLANGCI_LINT := $(shell command -v golangci-lint 2>/dev/null || printf "%s/bin/golangci-lint" "$$(go env GOPATH)")
 
 .PHONY: all test test-unit test-spec lint download-lint ethereum-tests-fixtures eest-fixtures
@@ -42,7 +43,7 @@ ethereum-tests-fixtures:
 		echo "Downloading ethereum/tests fixtures..."; \
 		rm -rf "$(FIXTURES_DIR)"; \
 		mkdir -p "$(dir $(FIXTURES_DIR))"; \
-		git clone --depth=1 --filter=blob:none --sparse https://github.com/ethereum/tests.git "$(FIXTURES_DIR)"; \
+		git clone --depth=1 --filter=blob:none --sparse --branch "$(ETHEREUM_TESTS_VERSION)" https://github.com/ethereum/tests.git "$(FIXTURES_DIR)"; \
 		cd "$(FIXTURES_DIR)" && git sparse-checkout set GeneralStateTests BlockchainTests TransactionTests; \
 	fi
 
