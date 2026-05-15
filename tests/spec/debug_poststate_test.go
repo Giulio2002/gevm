@@ -138,7 +138,7 @@ func TestDebugClearReturnBuffer(t *testing.T) {
 				db := BuildMemDB(unit.Pre)
 				blockEnv := BuildBlockEnv(unit, forkID)
 				cfgEnv := host.CfgEnv{ChainId: unit.ChainId()}
-				evm := host.NewEvm(db, forkID, blockEnv, cfgEnv)
+				evm := newTestEVM(db, forkID, blockEnv, cfgEnv)
 				execResult := evm.Transact(&tx)
 
 				if execResult.ValidationError {

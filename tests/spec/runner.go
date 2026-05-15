@@ -220,7 +220,7 @@ func executeSingleTest(
 	}
 
 	// Create EVM and execute
-	evm := host.NewEvm(db, forkID, blockEnv, cfgEnv)
+	evm := newTestEVM(db, forkID, blockEnv, cfgEnv)
 	execResult := evm.Transact(&tx)
 
 	// --- Validation ---
