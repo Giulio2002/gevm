@@ -1098,7 +1098,8 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 			}
 		case opcode.POP:
 			gasCounter += spec.GasBase
-			if interp.Stack.top == 0 {
+			s := interp.Stack
+			if s.top == 0 {
 				if gas.remaining < gasCounter {
 					interp.HaltOOG()
 					return
@@ -1107,9 +1108,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 				gasCounter = 0
 				interp.HaltUnderflow()
 			} else {
-
-				interp.Stack.top--
-
+				s.top--
 			}
 		case opcode.MLOAD:
 			gasCounter += spec.GasVerylow
@@ -3651,12 +3650,11 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 				return
 			}
 			gas.remaining -= spec.GasBase
-			if interp.Stack.top == 0 {
+			s := interp.Stack
+			if s.top == 0 {
 				interp.HaltUnderflow()
 			} else {
-
-				interp.Stack.top--
-
+				s.top--
 			}
 		case opcode.MLOAD:
 			if gas.remaining < spec.GasVerylow {

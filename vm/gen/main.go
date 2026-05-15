@@ -447,11 +447,12 @@ func (e *emitter) emitShapedBody(op opDef) {
 		e.p("}\n")
 
 	case shapePop1:
-		e.p("if interp.Stack.top == 0 {\n")
+		e.p("s := interp.Stack\n")
+		e.p("if s.top == 0 {\n")
 		e.emitFlushOnError()
 		e.p("interp.HaltUnderflow()\n")
 		e.p("} else {\n")
-		e.emitBody(op)
+		e.p("s.top--\n")
 		e.p("}\n")
 
 	case shapeCustom:
