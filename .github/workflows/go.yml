@@ -25,5 +25,8 @@ jobs:
     - name: Build
       run: go build -v ./...
 
-    - name: Test
-      run: go test -v ./...
+    - name: Test default runner
+      run: make test
+
+    - name: Test opcode runner
+      run: GEVM_TEST_RUNNER=opcode make test
