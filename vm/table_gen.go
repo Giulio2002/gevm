@@ -15,1110 +15,687 @@ var (
 	_ = opcode.STOP
 )
 
+type blockGasKind uint8
+
+const (
+	blockGasNone blockGasKind = iota
+	blockGasBalance
+	blockGasExtCodeSize
+	blockGasExtCodeHash
+	blockGasSload
+	blockGasCall
+	blockGasSelfdestruct
+)
+
+type blockOpcodeInfo struct {
+	constGas      uint64
+	forkGas       blockGasKind
+	stackRequired int16
+	stackChange   int16
+	startsBlock   bool
+	endsBlock     bool
+}
+
+func blockInstructionInfo(op byte) blockOpcodeInfo {
+	switch op {
+	case opcode.STOP:
+		return blockOpcodeInfo{constGas: 0, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.ADD:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 2, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.MUL:
+		return blockOpcodeInfo{constGas: spec.GasLow, forkGas: blockGasNone, stackRequired: 2, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.SUB:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 2, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.DIV:
+		return blockOpcodeInfo{constGas: spec.GasLow, forkGas: blockGasNone, stackRequired: 2, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.SDIV:
+		return blockOpcodeInfo{constGas: spec.GasLow, forkGas: blockGasNone, stackRequired: 2, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.MOD:
+		return blockOpcodeInfo{constGas: spec.GasLow, forkGas: blockGasNone, stackRequired: 2, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.SMOD:
+		return blockOpcodeInfo{constGas: spec.GasLow, forkGas: blockGasNone, stackRequired: 2, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.ADDMOD:
+		return blockOpcodeInfo{constGas: spec.GasMid, forkGas: blockGasNone, stackRequired: 3, stackChange: -2, startsBlock: false, endsBlock: false}
+	case opcode.MULMOD:
+		return blockOpcodeInfo{constGas: spec.GasMid, forkGas: blockGasNone, stackRequired: 3, stackChange: -2, startsBlock: false, endsBlock: false}
+	case opcode.EXP:
+		return blockOpcodeInfo{constGas: spec.GasHigh, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.SIGNEXTEND:
+		return blockOpcodeInfo{constGas: spec.GasLow, forkGas: blockGasNone, stackRequired: 2, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.LT:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 2, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.GT:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 2, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.SLT:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 2, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.SGT:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 2, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.EQ:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 2, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.ISZERO:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 1, stackChange: 0, startsBlock: false, endsBlock: false}
+	case opcode.AND:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 2, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.OR:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 2, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.XOR:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 2, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.NOT:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 1, stackChange: 0, startsBlock: false, endsBlock: false}
+	case opcode.BYTE:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 2, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.SHL:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 2, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.SHR:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 2, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.SAR:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 2, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.CLZ:
+		return blockOpcodeInfo{constGas: spec.GasLow, forkGas: blockGasNone, stackRequired: 1, stackChange: 0, startsBlock: false, endsBlock: false}
+	case opcode.KECCAK256:
+		return blockOpcodeInfo{constGas: spec.GasKeccak256, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.ADDRESS:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 0, stackChange: 1, startsBlock: false, endsBlock: false}
+	case opcode.BALANCE:
+		return blockOpcodeInfo{constGas: 0, forkGas: blockGasBalance, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.ORIGIN:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 0, stackChange: 1, startsBlock: false, endsBlock: false}
+	case opcode.CALLER:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 0, stackChange: 1, startsBlock: false, endsBlock: false}
+	case opcode.CALLVALUE:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 0, stackChange: 1, startsBlock: false, endsBlock: false}
+	case opcode.CALLDATALOAD:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 1, stackChange: 0, startsBlock: false, endsBlock: false}
+	case opcode.CALLDATASIZE:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 0, stackChange: 1, startsBlock: false, endsBlock: false}
+	case opcode.CALLDATACOPY:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.CODESIZE:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 0, stackChange: 1, startsBlock: false, endsBlock: false}
+	case opcode.CODECOPY:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.GASPRICE:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 0, stackChange: 1, startsBlock: false, endsBlock: false}
+	case opcode.EXTCODESIZE:
+		return blockOpcodeInfo{constGas: 0, forkGas: blockGasExtCodeSize, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.EXTCODECOPY:
+		return blockOpcodeInfo{constGas: 0, forkGas: blockGasExtCodeSize, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.RETURNDATASIZE:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 0, stackChange: 1, startsBlock: false, endsBlock: false}
+	case opcode.RETURNDATACOPY:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.EXTCODEHASH:
+		return blockOpcodeInfo{constGas: 0, forkGas: blockGasExtCodeHash, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.BLOCKHASH:
+		return blockOpcodeInfo{constGas: spec.GasBlockhash, forkGas: blockGasNone, stackRequired: 1, stackChange: 0, startsBlock: false, endsBlock: false}
+	case opcode.COINBASE:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 0, stackChange: 1, startsBlock: false, endsBlock: false}
+	case opcode.TIMESTAMP:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 0, stackChange: 1, startsBlock: false, endsBlock: false}
+	case opcode.NUMBER:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 0, stackChange: 1, startsBlock: false, endsBlock: false}
+	case opcode.DIFFICULTY:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.GASLIMIT:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 0, stackChange: 1, startsBlock: false, endsBlock: false}
+	case opcode.CHAINID:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 0, stackChange: 1, startsBlock: false, endsBlock: false}
+	case opcode.SELFBALANCE:
+		return blockOpcodeInfo{constGas: spec.GasLow, forkGas: blockGasNone, stackRequired: 0, stackChange: 1, startsBlock: false, endsBlock: false}
+	case opcode.BASEFEE:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 0, stackChange: 1, startsBlock: false, endsBlock: false}
+	case opcode.BLOBHASH:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.BLOBBASEFEE:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 0, stackChange: 1, startsBlock: false, endsBlock: false}
+	case opcode.SLOTNUM:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 0, stackChange: 1, startsBlock: false, endsBlock: false}
+	case opcode.POP:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 1, stackChange: -1, startsBlock: false, endsBlock: false}
+	case opcode.MLOAD:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.MSTORE:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.MSTORE8:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.SLOAD:
+		return blockOpcodeInfo{constGas: 0, forkGas: blockGasSload, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.SSTORE:
+		return blockOpcodeInfo{constGas: 0, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.JUMP:
+		return blockOpcodeInfo{constGas: spec.GasMid, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.JUMPI:
+		return blockOpcodeInfo{constGas: spec.GasHigh, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.PC:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 0, stackChange: 1, startsBlock: false, endsBlock: false}
+	case opcode.MSIZE:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 0, stackChange: 1, startsBlock: false, endsBlock: false}
+	case opcode.GAS:
+		return blockOpcodeInfo{constGas: spec.GasBase, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.JUMPDEST:
+		return blockOpcodeInfo{constGas: spec.GasJumpdest, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: false}
+	case opcode.TLOAD:
+		return blockOpcodeInfo{constGas: spec.GasWarmStorageReadCost, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.TSTORE:
+		return blockOpcodeInfo{constGas: spec.GasWarmStorageReadCost, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.MCOPY:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.DUPN:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.SWAPN:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.EXCHANGE:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.CREATE:
+		return blockOpcodeInfo{constGas: 0, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.CALL:
+		return blockOpcodeInfo{constGas: 0, forkGas: blockGasCall, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.CALLCODE:
+		return blockOpcodeInfo{constGas: 0, forkGas: blockGasCall, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.RETURN:
+		return blockOpcodeInfo{constGas: 0, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.DELEGATECALL:
+		return blockOpcodeInfo{constGas: 0, forkGas: blockGasCall, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.CREATE2:
+		return blockOpcodeInfo{constGas: 0, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.STATICCALL:
+		return blockOpcodeInfo{constGas: 0, forkGas: blockGasCall, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.REVERT:
+		return blockOpcodeInfo{constGas: 0, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.INVALID:
+		return blockOpcodeInfo{constGas: 0, forkGas: blockGasNone, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.SELFDESTRUCT:
+		return blockOpcodeInfo{constGas: 0, forkGas: blockGasSelfdestruct, stackRequired: 0, stackChange: 0, startsBlock: true, endsBlock: true}
+	case opcode.PUSH0:
+		return blockOpcodeInfo{constGas: spec.GasBase, stackChange: 1}
+	}
+	switch {
+	case op >= opcode.PUSH1 && op <= opcode.PUSH32:
+		return blockOpcodeInfo{constGas: spec.GasVerylow, stackChange: 1}
+	case op >= opcode.DUP1 && op <= opcode.DUP16:
+		n := int16(op - opcode.DUP1 + 1)
+		return blockOpcodeInfo{constGas: spec.GasVerylow, stackRequired: n, stackChange: 1}
+	case op >= opcode.SWAP1 && op <= opcode.SWAP16:
+		n := int16(op - opcode.SWAP1 + 2)
+		return blockOpcodeInfo{constGas: spec.GasVerylow, stackRequired: n}
+	case op >= opcode.LOG0 && op <= opcode.LOG4:
+		return blockOpcodeInfo{startsBlock: true, endsBlock: true}
+	default:
+		return blockOpcodeInfo{endsBlock: true}
+	}
+}
+
 // Run executes bytecode until halted using direct switch dispatch.
-// Static gas is accumulated in a local gasCounter variable. Instead of
-// checking and deducting gas per-instruction, static gas costs are summed
-// across a basic block and flushed (checked + deducted) at block boundaries
-// (jumps, dynamic-gas opcodes, halting opcodes). This eliminates one branch
-// + one memory write per static-gas instruction in the hot loop.
+// Static gas and stack requirements are checked once per precomputed basic
+// block. Dynamic opcodes are block boundaries, preserving exact GAS/call
+// semantics while avoiding per-opcode static gas and stack checks in the
+// straight-line hot path.
 func (DefaultRunner) Run(interp *Interpreter, host Host) {
 	bc := interp.Bytecode
 	gas := &interp.Gas
-	var gasCounter uint64
 	for bc.running {
+		if block := bc.BasicBlockAt(bc.pc); block != nil {
+			baseGas := block.baseGas(interp.ForkGas)
+			if gas.remaining < baseGas {
+				interp.HaltOOG()
+				return
+			}
+			sTop := interp.Stack.top
+			if sTop < int(block.StackRequired) {
+				gas.remaining -= baseGas
+				interp.HaltUnderflow()
+				return
+			}
+			if sTop+int(block.StackMaxGrowth) > StackLimit {
+				gas.remaining -= baseGas
+				interp.HaltOverflow()
+				return
+			}
+			gas.remaining -= baseGas
+		}
 		op := bc.code[bc.pc]
 		bc.pc++
 
 		switch op {
 		case opcode.STOP:
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 
 			interp.Halt(InstructionResultStop)
 
 		case opcode.ADD:
-			gasCounter += spec.GasVerylow
 			s := interp.Stack
-			if s.top < 2 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
-			} else {
-				s.top--
+			s.top--
 
-				s.data[s.top-1].Add(&s.data[s.top], &s.data[s.top-1])
+			s.data[s.top-1].Add(&s.data[s.top], &s.data[s.top-1])
 
-			}
 		case opcode.MUL:
-			gasCounter += spec.GasLow
 			s := interp.Stack
-			if s.top < 2 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
-			} else {
-				s.top--
+			s.top--
 
-				a := s.data[s.top]
-				top := &s.data[s.top-1]
-				top.Mul(&a, top)
+			a := s.data[s.top]
+			top := &s.data[s.top-1]
+			top.Mul(&a, top)
 
-			}
 		case opcode.SUB:
-			gasCounter += spec.GasVerylow
 			s := interp.Stack
-			if s.top < 2 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
-			} else {
-				s.top--
+			s.top--
 
-				s.data[s.top-1].Sub(&s.data[s.top], &s.data[s.top-1])
+			s.data[s.top-1].Sub(&s.data[s.top], &s.data[s.top-1])
 
-			}
 		case opcode.DIV:
-			gasCounter += spec.GasLow
 			s := interp.Stack
-			if s.top < 2 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
-			} else {
-				s.top--
+			s.top--
 
-				a := s.data[s.top]
-				top := &s.data[s.top-1]
-				if !top.IsZero() {
-					top.Div(&a, top)
-				}
-
+			a := s.data[s.top]
+			top := &s.data[s.top-1]
+			if !top.IsZero() {
+				top.Div(&a, top)
 			}
+
 		case opcode.SDIV:
-			gasCounter += spec.GasLow
 			s := interp.Stack
-			if s.top < 2 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
-			} else {
-				s.top--
+			s.top--
 
-				a := s.data[s.top]
-				top := &s.data[s.top-1]
-				top.SDiv(&a, top)
+			a := s.data[s.top]
+			top := &s.data[s.top-1]
+			top.SDiv(&a, top)
 
-			}
 		case opcode.MOD:
-			gasCounter += spec.GasLow
 			s := interp.Stack
-			if s.top < 2 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
-			} else {
-				s.top--
+			s.top--
 
-				a := s.data[s.top]
-				top := &s.data[s.top-1]
-				if !top.IsZero() {
-					top.Mod(&a, top)
-				}
-
+			a := s.data[s.top]
+			top := &s.data[s.top-1]
+			if !top.IsZero() {
+				top.Mod(&a, top)
 			}
+
 		case opcode.SMOD:
-			gasCounter += spec.GasLow
 			s := interp.Stack
-			if s.top < 2 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
-			} else {
-				s.top--
+			s.top--
 
-				a := s.data[s.top]
-				top := &s.data[s.top-1]
-				top.SMod(&a, top)
+			a := s.data[s.top]
+			top := &s.data[s.top-1]
+			top.SMod(&a, top)
 
-			}
 		case opcode.ADDMOD:
-			gasCounter += spec.GasMid
 			s := interp.Stack
-			if s.top < 3 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
-			} else {
-				s.top -= 2
+			s.top -= 2
 
-				a := s.data[s.top+1]
-				b := s.data[s.top]
-				top := &s.data[s.top-1]
-				top.AddMod(&a, &b, top)
+			a := s.data[s.top+1]
+			b := s.data[s.top]
+			top := &s.data[s.top-1]
+			top.AddMod(&a, &b, top)
 
-			}
 		case opcode.MULMOD:
-			gasCounter += spec.GasMid
 			s := interp.Stack
-			if s.top < 3 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
-			} else {
-				s.top -= 2
+			s.top -= 2
 
-				a := s.data[s.top+1]
-				b := s.data[s.top]
-				top := &s.data[s.top-1]
-				top.MulMod(&a, &b, top)
+			a := s.data[s.top+1]
+			b := s.data[s.top]
+			top := &s.data[s.top-1]
+			top.MulMod(&a, &b, top)
 
-			}
 		case opcode.EXP:
-			gasCounter += spec.GasHigh
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			opExp(interp)
 		case opcode.SIGNEXTEND:
-			gasCounter += spec.GasLow
 			s := interp.Stack
-			if s.top < 2 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
-			} else {
-				s.top--
+			s.top--
 
-				ext := s.data[s.top]
-				top := &s.data[s.top-1]
-				top.ExtendSign(top, &ext)
+			ext := s.data[s.top]
+			top := &s.data[s.top-1]
+			top.ExtendSign(top, &ext)
 
-			}
 		case opcode.LT:
-			gasCounter += spec.GasVerylow
 			s := interp.Stack
-			if s.top < 2 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
+			s.top--
+
+			if s.data[s.top].Lt(&s.data[s.top-1]) {
+				s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 			} else {
-				s.top--
-
-				if s.data[s.top].Lt(&s.data[s.top-1]) {
-					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
-				} else {
-					s.data[s.top-1] = uint256.Int{}
-				}
-
+				s.data[s.top-1] = uint256.Int{}
 			}
+
 		case opcode.GT:
-			gasCounter += spec.GasVerylow
 			s := interp.Stack
-			if s.top < 2 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
+			s.top--
+
+			if s.data[s.top].Gt(&s.data[s.top-1]) {
+				s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 			} else {
-				s.top--
-
-				if s.data[s.top].Gt(&s.data[s.top-1]) {
-					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
-				} else {
-					s.data[s.top-1] = uint256.Int{}
-				}
-
+				s.data[s.top-1] = uint256.Int{}
 			}
+
 		case opcode.SLT:
-			gasCounter += spec.GasVerylow
 			s := interp.Stack
-			if s.top < 2 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
+			s.top--
+
+			a := &s.data[s.top]
+			b := &s.data[s.top-1]
+			aNeg := a[3] >> 63
+			bNeg := b[3] >> 63
+			var lt bool
+			if aNeg != bNeg {
+				lt = aNeg > bNeg
 			} else {
-				s.top--
-
-				a := &s.data[s.top]
-				b := &s.data[s.top-1]
-				aNeg := a[3] >> 63
-				bNeg := b[3] >> 63
-				var lt bool
-				if aNeg != bNeg {
-					lt = aNeg > bNeg
-				} else {
-					lt = a.Lt(b)
-				}
-				if lt {
-					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
-				} else {
-					s.data[s.top-1] = uint256.Int{}
-				}
-
+				lt = a.Lt(b)
 			}
+			if lt {
+				s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
+			} else {
+				s.data[s.top-1] = uint256.Int{}
+			}
+
 		case opcode.SGT:
-			gasCounter += spec.GasVerylow
 			s := interp.Stack
-			if s.top < 2 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
+			s.top--
+
+			a := &s.data[s.top]
+			b := &s.data[s.top-1]
+			aNeg := a[3] >> 63
+			bNeg := b[3] >> 63
+			var gt bool
+			if aNeg != bNeg {
+				gt = bNeg > aNeg
 			} else {
-				s.top--
-
-				a := &s.data[s.top]
-				b := &s.data[s.top-1]
-				aNeg := a[3] >> 63
-				bNeg := b[3] >> 63
-				var gt bool
-				if aNeg != bNeg {
-					gt = bNeg > aNeg
-				} else {
-					gt = a.Gt(b)
-				}
-				if gt {
-					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
-				} else {
-					s.data[s.top-1] = uint256.Int{}
-				}
-
+				gt = a.Gt(b)
 			}
+			if gt {
+				s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
+			} else {
+				s.data[s.top-1] = uint256.Int{}
+			}
+
 		case opcode.EQ:
-			gasCounter += spec.GasVerylow
 			s := interp.Stack
-			if s.top < 2 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
+			s.top--
+
+			if s.data[s.top].Eq(&s.data[s.top-1]) {
+				s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 			} else {
-				s.top--
-
-				if s.data[s.top].Eq(&s.data[s.top-1]) {
-					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
-				} else {
-					s.data[s.top-1] = uint256.Int{}
-				}
-
+				s.data[s.top-1] = uint256.Int{}
 			}
+
 		case opcode.ISZERO:
-			gasCounter += spec.GasVerylow
 			s := interp.Stack
-			if s.top == 0 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
+
+			if s.data[s.top-1].IsZero() {
+				s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
 			} else {
-
-				if s.data[s.top-1].IsZero() {
-					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
-				} else {
-					s.data[s.top-1] = uint256.Int{}
-				}
-
+				s.data[s.top-1] = uint256.Int{}
 			}
+
 		case opcode.AND:
-			gasCounter += spec.GasVerylow
 			s := interp.Stack
-			if s.top < 2 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
-			} else {
-				s.top--
+			s.top--
 
-				s.data[s.top-1].And(&s.data[s.top], &s.data[s.top-1])
+			s.data[s.top-1].And(&s.data[s.top], &s.data[s.top-1])
 
-			}
 		case opcode.OR:
-			gasCounter += spec.GasVerylow
 			s := interp.Stack
-			if s.top < 2 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
-			} else {
-				s.top--
+			s.top--
 
-				s.data[s.top-1].Or(&s.data[s.top], &s.data[s.top-1])
+			s.data[s.top-1].Or(&s.data[s.top], &s.data[s.top-1])
 
-			}
 		case opcode.XOR:
-			gasCounter += spec.GasVerylow
 			s := interp.Stack
-			if s.top < 2 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
-			} else {
-				s.top--
+			s.top--
 
-				s.data[s.top-1].Xor(&s.data[s.top], &s.data[s.top-1])
+			s.data[s.top-1].Xor(&s.data[s.top], &s.data[s.top-1])
 
-			}
 		case opcode.NOT:
-			gasCounter += spec.GasVerylow
 			s := interp.Stack
-			if s.top == 0 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
-			} else {
 
-				s.data[s.top-1].Not(&s.data[s.top-1])
+			s.data[s.top-1].Not(&s.data[s.top-1])
 
-			}
 		case opcode.BYTE:
-			gasCounter += spec.GasVerylow
 			s := interp.Stack
-			if s.top < 2 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
+			s.top--
+
+			a := s.data[s.top]
+			top := &s.data[s.top-1]
+			idx, overflow := a.Uint64WithOverflow()
+			if !overflow && idx < 32 {
+				index := uint256.Int{idx, 0, 0, 0}
+				top.Byte(&index)
 			} else {
+				*top = uint256.Int{}
+			}
+
+		case opcode.SHL:
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Constantinople) {
+				interp.HaltNotActivated()
+			} else {
+				s := interp.Stack
 				s.top--
 
-				a := s.data[s.top]
+				shift := s.data[s.top]
 				top := &s.data[s.top-1]
-				idx, overflow := a.Uint64WithOverflow()
-				if !overflow && idx < 32 {
-					index := uint256.Int{idx, 0, 0, 0}
-					top.Byte(&index)
+				sa, overflow := shift.Uint64WithOverflow()
+				if !overflow && sa < 256 {
+					top.Lsh(top, uint(sa))
 				} else {
 					*top = uint256.Int{}
 				}
 
 			}
-		case opcode.SHL:
-			gasCounter += spec.GasVerylow
-			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Constantinople) {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltNotActivated()
-			} else {
-				s := interp.Stack
-				if s.top < 2 {
-					if gas.remaining < gasCounter {
-						interp.HaltOOG()
-						return
-					}
-					gas.remaining -= gasCounter
-					gasCounter = 0
-					interp.HaltUnderflow()
-				} else {
-					s.top--
-
-					shift := s.data[s.top]
-					top := &s.data[s.top-1]
-					sa, overflow := shift.Uint64WithOverflow()
-					if !overflow && sa < 256 {
-						top.Lsh(top, uint(sa))
-					} else {
-						*top = uint256.Int{}
-					}
-
-				}
-			}
 		case opcode.SHR:
-			gasCounter += spec.GasVerylow
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Constantinople) {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltNotActivated()
 			} else {
 				s := interp.Stack
-				if s.top < 2 {
-					if gas.remaining < gasCounter {
-						interp.HaltOOG()
-						return
-					}
-					gas.remaining -= gasCounter
-					gasCounter = 0
-					interp.HaltUnderflow()
+				s.top--
+
+				shift := s.data[s.top]
+				top := &s.data[s.top-1]
+				sa, overflow := shift.Uint64WithOverflow()
+				if !overflow && sa < 256 {
+					top.Rsh(top, uint(sa))
 				} else {
-					s.top--
-
-					shift := s.data[s.top]
-					top := &s.data[s.top-1]
-					sa, overflow := shift.Uint64WithOverflow()
-					if !overflow && sa < 256 {
-						top.Rsh(top, uint(sa))
-					} else {
-						*top = uint256.Int{}
-					}
-
+					*top = uint256.Int{}
 				}
+
 			}
 		case opcode.SAR:
-			gasCounter += spec.GasVerylow
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Constantinople) {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltNotActivated()
 			} else {
 				s := interp.Stack
-				if s.top < 2 {
-					if gas.remaining < gasCounter {
-						interp.HaltOOG()
-						return
-					}
-					gas.remaining -= gasCounter
-					gasCounter = 0
-					interp.HaltUnderflow()
+				s.top--
+
+				shift := s.data[s.top]
+				top := &s.data[s.top-1]
+				sa, overflow := shift.Uint64WithOverflow()
+				if !overflow && sa < 256 {
+					top.SRsh(top, uint(sa))
+				} else if top[3]&(1<<63) != 0 {
+					*top = uint256.Int{^uint64(0), ^uint64(0), ^uint64(0), ^uint64(0)}
 				} else {
-					s.top--
-
-					shift := s.data[s.top]
-					top := &s.data[s.top-1]
-					sa, overflow := shift.Uint64WithOverflow()
-					if !overflow && sa < 256 {
-						top.SRsh(top, uint(sa))
-					} else if top[3]&(1<<63) != 0 {
-						*top = uint256.Int{^uint64(0), ^uint64(0), ^uint64(0), ^uint64(0)}
-					} else {
-						*top = uint256.Int{}
-					}
-
+					*top = uint256.Int{}
 				}
+
 			}
 		case opcode.CLZ:
-			gasCounter += spec.GasLow
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Osaka) {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltNotActivated()
 			} else {
 				s := interp.Stack
-				if s.top == 0 {
-					if gas.remaining < gasCounter {
-						interp.HaltOOG()
-						return
-					}
-					gas.remaining -= gasCounter
-					gasCounter = 0
-					interp.HaltUnderflow()
-				} else {
-
-					top := &s.data[s.top-1]
-					*top = uint256.Int{uint64(256 - top.BitLen()), 0, 0, 0}
-
-				}
-			}
-		case opcode.KECCAK256:
-			gasCounter += spec.GasKeccak256
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
-			opKeccak256(interp)
-		case opcode.ADDRESS:
-			gasCounter += spec.GasBase
-			s := interp.Stack
-			if s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltOverflow()
-			} else {
-
-				s.data[s.top] = interp.Input.TargetAddress.ToU256()
-				s.top++
-
-			}
-		case opcode.BALANCE:
-			gasCounter += interp.ForkGas.Balance
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
-			opBalance(interp, host)
-		case opcode.ORIGIN:
-			gasCounter += spec.GasBase
-			s := interp.Stack
-			if s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltOverflow()
-			} else {
-
-				addr := host.Caller()
-				s.data[s.top] = addr.ToU256()
-				s.top++
-
-			}
-		case opcode.CALLER:
-			gasCounter += spec.GasBase
-			s := interp.Stack
-			if s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltOverflow()
-			} else {
-
-				s.data[s.top] = interp.Input.CallerAddress.ToU256()
-				s.top++
-
-			}
-		case opcode.CALLVALUE:
-			gasCounter += spec.GasBase
-			s := interp.Stack
-			if s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltOverflow()
-			} else {
-
-				s.data[s.top] = interp.Input.CallValue
-				s.top++
-
-			}
-		case opcode.CALLDATALOAD:
-			gasCounter += spec.GasVerylow
-			s := interp.Stack
-			if s.top == 0 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
-			} else {
 
 				top := &s.data[s.top-1]
-				offset, overflow := top.Uint64WithOverflow()
-				if overflow {
-					offset = ^uint64(0)
-				}
-				input := interp.Input.Input
-				var word [32]byte
-				if offset < uint64(len(input)) {
-					src := input[offset:]
-					if len(src) >= 32 {
-						copy(word[:], src[:32])
-					} else {
-						copy(word[:], src)
-					}
-				}
-				*top = *new(uint256.Int).SetBytes32((word)[:])
+				*top = uint256.Int{uint64(256 - top.BitLen()), 0, 0, 0}
 
 			}
-		case opcode.CALLDATASIZE:
-			gasCounter += spec.GasBase
+		case opcode.KECCAK256:
+			opKeccak256(interp)
+		case opcode.ADDRESS:
 			s := interp.Stack
-			if s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
+
+			s.data[s.top] = interp.Input.TargetAddress.ToU256()
+			s.top++
+
+		case opcode.BALANCE:
+			opBalance(interp, host)
+		case opcode.ORIGIN:
+			s := interp.Stack
+
+			addr := host.Caller()
+			s.data[s.top] = addr.ToU256()
+			s.top++
+
+		case opcode.CALLER:
+			s := interp.Stack
+
+			s.data[s.top] = interp.Input.CallerAddress.ToU256()
+			s.top++
+
+		case opcode.CALLVALUE:
+			s := interp.Stack
+
+			s.data[s.top] = interp.Input.CallValue
+			s.top++
+
+		case opcode.CALLDATALOAD:
+			s := interp.Stack
+
+			top := &s.data[s.top-1]
+			offset, overflow := top.Uint64WithOverflow()
+			if overflow {
+				offset = ^uint64(0)
+			}
+			input := interp.Input.Input
+			var word [32]byte
+			if offset < uint64(len(input)) {
+				src := input[offset:]
+				if len(src) >= 32 {
+					copy(word[:], src[:32])
+				} else {
+					copy(word[:], src)
 				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltOverflow()
-			} else {
-
-				s.data[s.top] = uint256.Int{uint64(len(interp.Input.Input)), 0, 0, 0}
-				s.top++
-
 			}
+			*top = *new(uint256.Int).SetBytes32((word)[:])
+
+		case opcode.CALLDATASIZE:
+			s := interp.Stack
+
+			s.data[s.top] = uint256.Int{uint64(len(interp.Input.Input)), 0, 0, 0}
+			s.top++
+
 		case opcode.CALLDATACOPY:
-			gasCounter += spec.GasVerylow
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			opCalldatacopy(interp)
 		case opcode.CODESIZE:
-			gasCounter += spec.GasBase
 			s := interp.Stack
-			if s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltOverflow()
-			} else {
 
-				s.data[s.top] = uint256.Int{uint64(bc.originalLen), 0, 0, 0}
-				s.top++
+			s.data[s.top] = uint256.Int{uint64(bc.originalLen), 0, 0, 0}
+			s.top++
 
-			}
 		case opcode.CODECOPY:
-			gasCounter += spec.GasVerylow
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			opCodecopy(interp)
 		case opcode.GASPRICE:
-			gasCounter += spec.GasBase
 			s := interp.Stack
-			if s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltOverflow()
-			} else {
 
-				s.data[s.top] = host.EffectiveGasPrice()
-				s.top++
+			s.data[s.top] = host.EffectiveGasPrice()
+			s.top++
 
-			}
 		case opcode.EXTCODESIZE:
-			gasCounter += interp.ForkGas.ExtCodeSize
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			opExtcodesize(interp, host)
 		case opcode.EXTCODECOPY:
-			gasCounter += interp.ForkGas.ExtCodeSize
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			opExtcodecopy(interp, host)
 		case opcode.RETURNDATASIZE:
-			gasCounter += spec.GasBase
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Byzantium) {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltNotActivated()
 			} else {
 				s := interp.Stack
-				if s.top >= StackLimit {
-					if gas.remaining < gasCounter {
-						interp.HaltOOG()
-						return
-					}
-					gas.remaining -= gasCounter
-					gasCounter = 0
-					interp.HaltOverflow()
-				} else {
 
-					s.data[s.top] = uint256.Int{uint64(len(interp.ReturnData)), 0, 0, 0}
-					s.top++
+				s.data[s.top] = uint256.Int{uint64(len(interp.ReturnData)), 0, 0, 0}
+				s.top++
 
-				}
 			}
 		case opcode.RETURNDATACOPY:
-			gasCounter += spec.GasVerylow
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Byzantium) {
 				interp.HaltNotActivated()
 			} else {
 				opReturndatacopy(interp)
 			}
 		case opcode.EXTCODEHASH:
-			gasCounter += interp.ForkGas.ExtCodeHash
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Constantinople) {
 				interp.HaltNotActivated()
 			} else {
 				opExtcodehash(interp, host)
 			}
 		case opcode.BLOCKHASH:
-			gasCounter += spec.GasBlockhash
 			s := interp.Stack
-			if s.top == 0 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
-			} else {
 
-				top := &s.data[s.top-1]
-				hash := host.BlockHash(*top)
-				*top = hash.ToU256()
+			top := &s.data[s.top-1]
+			hash := host.BlockHash(*top)
+			*top = hash.ToU256()
 
-			}
 		case opcode.COINBASE:
-			gasCounter += spec.GasBase
 			s := interp.Stack
-			if s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltOverflow()
-			} else {
 
-				addr := host.Beneficiary()
-				s.data[s.top] = addr.ToU256()
-				s.top++
+			addr := host.Beneficiary()
+			s.data[s.top] = addr.ToU256()
+			s.top++
 
-			}
 		case opcode.TIMESTAMP:
-			gasCounter += spec.GasBase
 			s := interp.Stack
-			if s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltOverflow()
-			} else {
 
-				s.data[s.top] = host.Timestamp()
-				s.top++
+			s.data[s.top] = host.Timestamp()
+			s.top++
 
-			}
 		case opcode.NUMBER:
-			gasCounter += spec.GasBase
 			s := interp.Stack
-			if s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltOverflow()
-			} else {
 
-				s.data[s.top] = host.BlockNumber()
-				s.top++
+			s.data[s.top] = host.BlockNumber()
+			s.top++
 
-			}
 		case opcode.DIFFICULTY:
-			gasCounter += spec.GasBase
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			opDifficulty(interp, host)
 		case opcode.GASLIMIT:
-			gasCounter += spec.GasBase
 			s := interp.Stack
-			if s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltOverflow()
-			} else {
 
-				s.data[s.top] = host.GasLimit()
-				s.top++
+			s.data[s.top] = host.GasLimit()
+			s.top++
 
-			}
 		case opcode.CHAINID:
-			gasCounter += spec.GasBase
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Istanbul) {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltNotActivated()
 			} else {
-				s := interp.Stack
-				if s.top >= StackLimit {
-					if gas.remaining < gasCounter {
-						interp.HaltOOG()
-						return
-					}
-					gas.remaining -= gasCounter
-					gasCounter = 0
-					interp.HaltOverflow()
-				} else {
-					opChainid(interp, host)
-				}
+				opChainid(interp, host)
 			}
 		case opcode.SELFBALANCE:
-			gasCounter += spec.GasLow
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Istanbul) {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltNotActivated()
 			} else {
-				s := interp.Stack
-				if s.top >= StackLimit {
-					if gas.remaining < gasCounter {
-						interp.HaltOOG()
-						return
-					}
-					gas.remaining -= gasCounter
-					gasCounter = 0
-					interp.HaltOverflow()
-				} else {
-					opSelfbalance(interp, host)
-				}
+				opSelfbalance(interp, host)
 			}
 		case opcode.BASEFEE:
-			gasCounter += spec.GasBase
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.London) {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltNotActivated()
 			} else {
-				s := interp.Stack
-				if s.top >= StackLimit {
-					if gas.remaining < gasCounter {
-						interp.HaltOOG()
-						return
-					}
-					gas.remaining -= gasCounter
-					gasCounter = 0
-					interp.HaltOverflow()
-				} else {
-					opBasefee(interp, host)
-				}
+				opBasefee(interp, host)
 			}
 		case opcode.BLOBHASH:
-			gasCounter += spec.GasVerylow
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Cancun) {
 				interp.HaltNotActivated()
 			} else {
 				opBlobhash(interp, host)
 			}
 		case opcode.BLOBBASEFEE:
-			gasCounter += spec.GasBase
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Cancun) {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltNotActivated()
 			} else {
-				s := interp.Stack
-				if s.top >= StackLimit {
-					if gas.remaining < gasCounter {
-						interp.HaltOOG()
-						return
-					}
-					gas.remaining -= gasCounter
-					gasCounter = 0
-					interp.HaltOverflow()
-				} else {
-					opBlobbasefee(interp, host)
-				}
+				opBlobbasefee(interp, host)
 			}
 		case opcode.SLOTNUM:
-			gasCounter += spec.GasBase
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Amsterdam) {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltNotActivated()
 			} else {
-				s := interp.Stack
-				if s.top >= StackLimit {
-					if gas.remaining < gasCounter {
-						interp.HaltOOG()
-						return
-					}
-					gas.remaining -= gasCounter
-					gasCounter = 0
-					interp.HaltOverflow()
-				} else {
-					opSlotnum(interp, host)
-				}
+				opSlotnum(interp, host)
 			}
 		case opcode.POP:
-			gasCounter += spec.GasBase
-			if interp.Stack.top == 0 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
-				interp.HaltUnderflow()
-			} else {
 
-				interp.Stack.top--
+			interp.Stack.top--
 
-			}
 		case opcode.MLOAD:
-			gasCounter += spec.GasVerylow
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 
 			s := interp.Stack
 			if s.top == 0 {
@@ -1140,13 +717,6 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 			}
 
 		case opcode.MSTORE:
-			gasCounter += spec.GasVerylow
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 
 			s := interp.Stack
 			if s.top < 2 {
@@ -1170,39 +740,12 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 			}
 
 		case opcode.MSTORE8:
-			gasCounter += spec.GasVerylow
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			opMstore8(interp)
 		case opcode.SLOAD:
-			gasCounter += interp.ForkGas.Sload
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			opSload(interp, host)
 		case opcode.SSTORE:
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			opSstore(interp, host)
 		case opcode.JUMP:
-			gasCounter += spec.GasMid
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 
 			s := interp.Stack
 			if s.top == 0 {
@@ -1230,13 +773,6 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 			bc.pc = dest
 
 		case opcode.JUMPI:
-			gasCounter += spec.GasHigh
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 
 			s := interp.Stack
 			if s.top < 2 {
@@ -1267,15 +803,1380 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 			}
 
 		case opcode.PC:
-			gasCounter += spec.GasBase
+			s := interp.Stack
+
+			s.data[s.top] = uint256.Int{uint64(bc.pc - 1), 0, 0, 0}
+			s.top++
+
+		case opcode.MSIZE:
+			s := interp.Stack
+
+			s.data[s.top] = uint256.Int{uint64(interp.Memory.Len()), 0, 0, 0}
+			s.top++
+
+		case opcode.GAS:
+			opGas(interp)
+		case opcode.JUMPDEST:
+		case opcode.TLOAD:
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Cancun) {
+				interp.HaltNotActivated()
+			} else {
+				opTload(interp, host)
+			}
+		case opcode.TSTORE:
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Cancun) {
+				interp.HaltNotActivated()
+			} else {
+				opTstore(interp, host)
+			}
+		case opcode.MCOPY:
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Cancun) {
+				interp.HaltNotActivated()
+			} else {
+				opMcopy(interp)
+			}
+		case opcode.DUPN:
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Amsterdam) {
+				interp.HaltNotActivated()
+			} else {
+				opDupN(interp)
+			}
+		case opcode.SWAPN:
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Amsterdam) {
+				interp.HaltNotActivated()
+			} else {
+				opSwapN(interp)
+			}
+		case opcode.EXCHANGE:
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Amsterdam) {
+				interp.HaltNotActivated()
+			} else {
+				opExchange(interp)
+			}
+		case opcode.CREATE:
+			opCreate(interp, host)
+		case opcode.CALL:
+			opCall(interp, host)
+		case opcode.CALLCODE:
+			opCallcode(interp, host)
+		case opcode.RETURN:
+			opReturn(interp)
+		case opcode.DELEGATECALL:
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Homestead) {
+				interp.HaltNotActivated()
+			} else {
+				opDelegatecall(interp, host)
+			}
+		case opcode.CREATE2:
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Petersburg) {
+				interp.HaltNotActivated()
+			} else {
+				opCreate2(interp, host)
+			}
+		case opcode.STATICCALL:
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Byzantium) {
+				interp.HaltNotActivated()
+			} else {
+				opStaticcall(interp, host)
+			}
+		case opcode.REVERT:
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Byzantium) {
+				interp.HaltNotActivated()
+			} else {
+				opRevert(interp)
+			}
+		case opcode.INVALID:
+
+			interp.Halt(InstructionResultInvalidFEOpcode)
+
+		case opcode.SELFDESTRUCT:
+			opSelfdestruct(interp, host)
+		case opcode.PUSH0:
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Shanghai) {
+				interp.HaltNotActivated()
+			} else {
+				s := interp.Stack
+
+				s.data[s.top] = uint256.Int{}
+				s.top++
+
+			}
+		case opcode.PUSH1:
+			s := interp.Stack
+
+			s.data[s.top] = uint256.Int{uint64(bc.code[bc.pc]), 0, 0, 0}
+			bc.pc++
+			s.top++
+
+		case opcode.PUSH2:
+			s := interp.Stack
+
+			v := uint64(bc.code[bc.pc])<<8 | uint64(bc.code[bc.pc+1])
+			bc.pc += 2
+			s.data[s.top] = uint256.Int{v, 0, 0, 0}
+			s.top++
+
+		case opcode.PUSH3:
+			s := interp.Stack
+
+			c := bc.code
+			p := bc.pc
+			v := uint64(c[p])<<16 | uint64(c[p+1])<<8 | uint64(c[p+2])
+			bc.pc = p + 3
+			s.data[s.top] = uint256.Int{v, 0, 0, 0}
+			s.top++
+
+		case opcode.PUSH4:
+			s := interp.Stack
+
+			c := bc.code
+			p := bc.pc
+			v := uint64(c[p])<<24 | uint64(c[p+1])<<16 | uint64(c[p+2])<<8 | uint64(c[p+3])
+			bc.pc = p + 4
+			s.data[s.top] = uint256.Int{v, 0, 0, 0}
+			s.top++
+
+		case opcode.PUSH20:
+			s := interp.Stack
+
+			c := bc.code
+			p := bc.pc
+			// 20 bytes = limb2 (4 bytes) + limb1 (8 bytes) + limb0 (8 bytes)
+			l2 := uint64(c[p])<<24 | uint64(c[p+1])<<16 | uint64(c[p+2])<<8 | uint64(c[p+3])
+			l1 := uint64(c[p+4])<<56 | uint64(c[p+5])<<48 | uint64(c[p+6])<<40 | uint64(c[p+7])<<32 |
+				uint64(c[p+8])<<24 | uint64(c[p+9])<<16 | uint64(c[p+10])<<8 | uint64(c[p+11])
+			l0 := uint64(c[p+12])<<56 | uint64(c[p+13])<<48 | uint64(c[p+14])<<40 | uint64(c[p+15])<<32 |
+				uint64(c[p+16])<<24 | uint64(c[p+17])<<16 | uint64(c[p+18])<<8 | uint64(c[p+19])
+			bc.pc = p + 20
+			s.data[s.top] = uint256.Int{l0, l1, l2, 0}
+			s.top++
+
+		case opcode.PUSH32:
+			s := interp.Stack
+
+			c := bc.code
+			p := bc.pc
+			l3 := uint64(c[p])<<56 | uint64(c[p+1])<<48 | uint64(c[p+2])<<40 | uint64(c[p+3])<<32 |
+				uint64(c[p+4])<<24 | uint64(c[p+5])<<16 | uint64(c[p+6])<<8 | uint64(c[p+7])
+			l2 := uint64(c[p+8])<<56 | uint64(c[p+9])<<48 | uint64(c[p+10])<<40 | uint64(c[p+11])<<32 |
+				uint64(c[p+12])<<24 | uint64(c[p+13])<<16 | uint64(c[p+14])<<8 | uint64(c[p+15])
+			l1 := uint64(c[p+16])<<56 | uint64(c[p+17])<<48 | uint64(c[p+18])<<40 | uint64(c[p+19])<<32 |
+				uint64(c[p+20])<<24 | uint64(c[p+21])<<16 | uint64(c[p+22])<<8 | uint64(c[p+23])
+			l0 := uint64(c[p+24])<<56 | uint64(c[p+25])<<48 | uint64(c[p+26])<<40 | uint64(c[p+27])<<32 |
+				uint64(c[p+28])<<24 | uint64(c[p+29])<<16 | uint64(c[p+30])<<8 | uint64(c[p+31])
+			bc.pc = p + 32
+			s.data[s.top] = uint256.Int{l0, l1, l2, l3}
+			s.top++
+
+		case opcode.PUSH5, opcode.PUSH6, opcode.PUSH7, opcode.PUSH8, opcode.PUSH9, opcode.PUSH10, opcode.PUSH11, opcode.PUSH12, opcode.PUSH13, opcode.PUSH14, opcode.PUSH15, opcode.PUSH16, opcode.PUSH17, opcode.PUSH18, opcode.PUSH19, opcode.PUSH21, opcode.PUSH22, opcode.PUSH23, opcode.PUSH24, opcode.PUSH25, opcode.PUSH26, opcode.PUSH27, opcode.PUSH28, opcode.PUSH29, opcode.PUSH30, opcode.PUSH31:
+			s := interp.Stack
+			n := int(op - opcode.PUSH0)
+			s.data[s.top] = *new(uint256.Int).SetBytes(bc.code[bc.pc : bc.pc+n])
+			bc.pc += n
+			s.top++
+		case opcode.DUP1:
+			s := interp.Stack
+			s.data[s.top] = s.data[s.top-1]
+			s.top++
+		case opcode.DUP2:
+			s := interp.Stack
+			s.data[s.top] = s.data[s.top-2]
+			s.top++
+		case opcode.DUP3:
+			s := interp.Stack
+			s.data[s.top] = s.data[s.top-3]
+			s.top++
+		case opcode.DUP4:
+			s := interp.Stack
+			s.data[s.top] = s.data[s.top-4]
+			s.top++
+		case opcode.DUP5:
+			s := interp.Stack
+			s.data[s.top] = s.data[s.top-5]
+			s.top++
+		case opcode.DUP6:
+			s := interp.Stack
+			s.data[s.top] = s.data[s.top-6]
+			s.top++
+		case opcode.DUP7:
+			s := interp.Stack
+			s.data[s.top] = s.data[s.top-7]
+			s.top++
+		case opcode.DUP8:
+			s := interp.Stack
+			s.data[s.top] = s.data[s.top-8]
+			s.top++
+		case opcode.DUP9:
+			s := interp.Stack
+			s.data[s.top] = s.data[s.top-9]
+			s.top++
+		case opcode.DUP10:
+			s := interp.Stack
+			s.data[s.top] = s.data[s.top-10]
+			s.top++
+		case opcode.DUP11:
+			s := interp.Stack
+			s.data[s.top] = s.data[s.top-11]
+			s.top++
+		case opcode.DUP12:
+			s := interp.Stack
+			s.data[s.top] = s.data[s.top-12]
+			s.top++
+		case opcode.DUP13:
+			s := interp.Stack
+			s.data[s.top] = s.data[s.top-13]
+			s.top++
+		case opcode.DUP14:
+			s := interp.Stack
+			s.data[s.top] = s.data[s.top-14]
+			s.top++
+		case opcode.DUP15:
+			s := interp.Stack
+			s.data[s.top] = s.data[s.top-15]
+			s.top++
+		case opcode.DUP16:
+			s := interp.Stack
+			s.data[s.top] = s.data[s.top-16]
+			s.top++
+		case opcode.SWAP1:
+			s := interp.Stack
+			t := s.top - 1
+			s.data[t], s.data[t-1] = s.data[t-1], s.data[t]
+		case opcode.SWAP2:
+			s := interp.Stack
+			t := s.top - 1
+			s.data[t], s.data[t-2] = s.data[t-2], s.data[t]
+		case opcode.SWAP3:
+			s := interp.Stack
+			t := s.top - 1
+			s.data[t], s.data[t-3] = s.data[t-3], s.data[t]
+		case opcode.SWAP4:
+			s := interp.Stack
+			t := s.top - 1
+			s.data[t], s.data[t-4] = s.data[t-4], s.data[t]
+		case opcode.SWAP5:
+			s := interp.Stack
+			t := s.top - 1
+			s.data[t], s.data[t-5] = s.data[t-5], s.data[t]
+		case opcode.SWAP6:
+			s := interp.Stack
+			t := s.top - 1
+			s.data[t], s.data[t-6] = s.data[t-6], s.data[t]
+		case opcode.SWAP7:
+			s := interp.Stack
+			t := s.top - 1
+			s.data[t], s.data[t-7] = s.data[t-7], s.data[t]
+		case opcode.SWAP8:
+			s := interp.Stack
+			t := s.top - 1
+			s.data[t], s.data[t-8] = s.data[t-8], s.data[t]
+		case opcode.SWAP9:
+			s := interp.Stack
+			t := s.top - 1
+			s.data[t], s.data[t-9] = s.data[t-9], s.data[t]
+		case opcode.SWAP10:
+			s := interp.Stack
+			t := s.top - 1
+			s.data[t], s.data[t-10] = s.data[t-10], s.data[t]
+		case opcode.SWAP11:
+			s := interp.Stack
+			t := s.top - 1
+			s.data[t], s.data[t-11] = s.data[t-11], s.data[t]
+		case opcode.SWAP12:
+			s := interp.Stack
+			t := s.top - 1
+			s.data[t], s.data[t-12] = s.data[t-12], s.data[t]
+		case opcode.SWAP13:
+			s := interp.Stack
+			t := s.top - 1
+			s.data[t], s.data[t-13] = s.data[t-13], s.data[t]
+		case opcode.SWAP14:
+			s := interp.Stack
+			t := s.top - 1
+			s.data[t], s.data[t-14] = s.data[t-14], s.data[t]
+		case opcode.SWAP15:
+			s := interp.Stack
+			t := s.top - 1
+			s.data[t], s.data[t-15] = s.data[t-15], s.data[t]
+		case opcode.SWAP16:
+			s := interp.Stack
+			t := s.top - 1
+			s.data[t], s.data[t-16] = s.data[t-16], s.data[t]
+		case opcode.LOG0:
+			logNImpl(interp, host, 0)
+		case opcode.LOG1:
+			logNImpl(interp, host, 1)
+		case opcode.LOG2:
+			logNImpl(interp, host, 2)
+		case opcode.LOG3:
+			logNImpl(interp, host, 3)
+		case opcode.LOG4:
+			logNImpl(interp, host, 4)
+		default:
+			interp.Halt(InstructionResultOpcodeNotFound)
+		}
+	}
+}
+
+// Run executes bytecode with simple per-opcode gas and stack checks.
+// It deliberately avoids the basic-block optimization and is intended for
+// RPC/debug paths that prefer direct opcode-by-opcode behavior.
+func (PlainRunner) Run(interp *Interpreter, host Host) {
+	bc := interp.Bytecode
+	gas := &interp.Gas
+	for bc.running {
+		op := bc.code[bc.pc]
+		bc.pc++
+
+		switch op {
+		case opcode.STOP:
+
+			interp.Halt(InstructionResultStop)
+
+		case opcode.ADD:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top < 2 {
+				interp.HaltUnderflow()
+			} else {
+				s.top--
+
+				s.data[s.top-1].Add(&s.data[s.top], &s.data[s.top-1])
+
+			}
+		case opcode.MUL:
+			if gas.remaining < spec.GasLow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasLow
+			s := interp.Stack
+			if s.top < 2 {
+				interp.HaltUnderflow()
+			} else {
+				s.top--
+
+				a := s.data[s.top]
+				top := &s.data[s.top-1]
+				top.Mul(&a, top)
+
+			}
+		case opcode.SUB:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top < 2 {
+				interp.HaltUnderflow()
+			} else {
+				s.top--
+
+				s.data[s.top-1].Sub(&s.data[s.top], &s.data[s.top-1])
+
+			}
+		case opcode.DIV:
+			if gas.remaining < spec.GasLow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasLow
+			s := interp.Stack
+			if s.top < 2 {
+				interp.HaltUnderflow()
+			} else {
+				s.top--
+
+				a := s.data[s.top]
+				top := &s.data[s.top-1]
+				if !top.IsZero() {
+					top.Div(&a, top)
+				}
+
+			}
+		case opcode.SDIV:
+			if gas.remaining < spec.GasLow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasLow
+			s := interp.Stack
+			if s.top < 2 {
+				interp.HaltUnderflow()
+			} else {
+				s.top--
+
+				a := s.data[s.top]
+				top := &s.data[s.top-1]
+				top.SDiv(&a, top)
+
+			}
+		case opcode.MOD:
+			if gas.remaining < spec.GasLow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasLow
+			s := interp.Stack
+			if s.top < 2 {
+				interp.HaltUnderflow()
+			} else {
+				s.top--
+
+				a := s.data[s.top]
+				top := &s.data[s.top-1]
+				if !top.IsZero() {
+					top.Mod(&a, top)
+				}
+
+			}
+		case opcode.SMOD:
+			if gas.remaining < spec.GasLow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasLow
+			s := interp.Stack
+			if s.top < 2 {
+				interp.HaltUnderflow()
+			} else {
+				s.top--
+
+				a := s.data[s.top]
+				top := &s.data[s.top-1]
+				top.SMod(&a, top)
+
+			}
+		case opcode.ADDMOD:
+			if gas.remaining < spec.GasMid {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasMid
+			s := interp.Stack
+			if s.top < 3 {
+				interp.HaltUnderflow()
+			} else {
+				s.top -= 2
+
+				a := s.data[s.top+1]
+				b := s.data[s.top]
+				top := &s.data[s.top-1]
+				top.AddMod(&a, &b, top)
+
+			}
+		case opcode.MULMOD:
+			if gas.remaining < spec.GasMid {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasMid
+			s := interp.Stack
+			if s.top < 3 {
+				interp.HaltUnderflow()
+			} else {
+				s.top -= 2
+
+				a := s.data[s.top+1]
+				b := s.data[s.top]
+				top := &s.data[s.top-1]
+				top.MulMod(&a, &b, top)
+
+			}
+		case opcode.EXP:
+			if gas.remaining < spec.GasHigh {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasHigh
+			opExp(interp)
+		case opcode.SIGNEXTEND:
+			if gas.remaining < spec.GasLow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasLow
+			s := interp.Stack
+			if s.top < 2 {
+				interp.HaltUnderflow()
+			} else {
+				s.top--
+
+				ext := s.data[s.top]
+				top := &s.data[s.top-1]
+				top.ExtendSign(top, &ext)
+
+			}
+		case opcode.LT:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top < 2 {
+				interp.HaltUnderflow()
+			} else {
+				s.top--
+
+				if s.data[s.top].Lt(&s.data[s.top-1]) {
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
+				} else {
+					s.data[s.top-1] = uint256.Int{}
+				}
+
+			}
+		case opcode.GT:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top < 2 {
+				interp.HaltUnderflow()
+			} else {
+				s.top--
+
+				if s.data[s.top].Gt(&s.data[s.top-1]) {
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
+				} else {
+					s.data[s.top-1] = uint256.Int{}
+				}
+
+			}
+		case opcode.SLT:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top < 2 {
+				interp.HaltUnderflow()
+			} else {
+				s.top--
+
+				a := &s.data[s.top]
+				b := &s.data[s.top-1]
+				aNeg := a[3] >> 63
+				bNeg := b[3] >> 63
+				var lt bool
+				if aNeg != bNeg {
+					lt = aNeg > bNeg
+				} else {
+					lt = a.Lt(b)
+				}
+				if lt {
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
+				} else {
+					s.data[s.top-1] = uint256.Int{}
+				}
+
+			}
+		case opcode.SGT:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top < 2 {
+				interp.HaltUnderflow()
+			} else {
+				s.top--
+
+				a := &s.data[s.top]
+				b := &s.data[s.top-1]
+				aNeg := a[3] >> 63
+				bNeg := b[3] >> 63
+				var gt bool
+				if aNeg != bNeg {
+					gt = bNeg > aNeg
+				} else {
+					gt = a.Gt(b)
+				}
+				if gt {
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
+				} else {
+					s.data[s.top-1] = uint256.Int{}
+				}
+
+			}
+		case opcode.EQ:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top < 2 {
+				interp.HaltUnderflow()
+			} else {
+				s.top--
+
+				if s.data[s.top].Eq(&s.data[s.top-1]) {
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
+				} else {
+					s.data[s.top-1] = uint256.Int{}
+				}
+
+			}
+		case opcode.ISZERO:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top == 0 {
+				interp.HaltUnderflow()
+			} else {
+
+				if s.data[s.top-1].IsZero() {
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
+				} else {
+					s.data[s.top-1] = uint256.Int{}
+				}
+
+			}
+		case opcode.AND:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top < 2 {
+				interp.HaltUnderflow()
+			} else {
+				s.top--
+
+				s.data[s.top-1].And(&s.data[s.top], &s.data[s.top-1])
+
+			}
+		case opcode.OR:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top < 2 {
+				interp.HaltUnderflow()
+			} else {
+				s.top--
+
+				s.data[s.top-1].Or(&s.data[s.top], &s.data[s.top-1])
+
+			}
+		case opcode.XOR:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top < 2 {
+				interp.HaltUnderflow()
+			} else {
+				s.top--
+
+				s.data[s.top-1].Xor(&s.data[s.top], &s.data[s.top-1])
+
+			}
+		case opcode.NOT:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top == 0 {
+				interp.HaltUnderflow()
+			} else {
+
+				s.data[s.top-1].Not(&s.data[s.top-1])
+
+			}
+		case opcode.BYTE:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top < 2 {
+				interp.HaltUnderflow()
+			} else {
+				s.top--
+
+				a := s.data[s.top]
+				top := &s.data[s.top-1]
+				idx, overflow := a.Uint64WithOverflow()
+				if !overflow && idx < 32 {
+					index := uint256.Int{idx, 0, 0, 0}
+					top.Byte(&index)
+				} else {
+					*top = uint256.Int{}
+				}
+
+			}
+		case opcode.SHL:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Constantinople) {
+				interp.HaltNotActivated()
+			} else {
+				s := interp.Stack
+				if s.top < 2 {
+					interp.HaltUnderflow()
+				} else {
+					s.top--
+
+					shift := s.data[s.top]
+					top := &s.data[s.top-1]
+					sa, overflow := shift.Uint64WithOverflow()
+					if !overflow && sa < 256 {
+						top.Lsh(top, uint(sa))
+					} else {
+						*top = uint256.Int{}
+					}
+
+				}
+			}
+		case opcode.SHR:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Constantinople) {
+				interp.HaltNotActivated()
+			} else {
+				s := interp.Stack
+				if s.top < 2 {
+					interp.HaltUnderflow()
+				} else {
+					s.top--
+
+					shift := s.data[s.top]
+					top := &s.data[s.top-1]
+					sa, overflow := shift.Uint64WithOverflow()
+					if !overflow && sa < 256 {
+						top.Rsh(top, uint(sa))
+					} else {
+						*top = uint256.Int{}
+					}
+
+				}
+			}
+		case opcode.SAR:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Constantinople) {
+				interp.HaltNotActivated()
+			} else {
+				s := interp.Stack
+				if s.top < 2 {
+					interp.HaltUnderflow()
+				} else {
+					s.top--
+
+					shift := s.data[s.top]
+					top := &s.data[s.top-1]
+					sa, overflow := shift.Uint64WithOverflow()
+					if !overflow && sa < 256 {
+						top.SRsh(top, uint(sa))
+					} else if top[3]&(1<<63) != 0 {
+						*top = uint256.Int{^uint64(0), ^uint64(0), ^uint64(0), ^uint64(0)}
+					} else {
+						*top = uint256.Int{}
+					}
+
+				}
+			}
+		case opcode.CLZ:
+			if gas.remaining < spec.GasLow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasLow
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Osaka) {
+				interp.HaltNotActivated()
+			} else {
+				s := interp.Stack
+				if s.top == 0 {
+					interp.HaltUnderflow()
+				} else {
+
+					top := &s.data[s.top-1]
+					*top = uint256.Int{uint64(256 - top.BitLen()), 0, 0, 0}
+
+				}
+			}
+		case opcode.KECCAK256:
+			if gas.remaining < spec.GasKeccak256 {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasKeccak256
+			opKeccak256(interp)
+		case opcode.ADDRESS:
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
 			s := interp.Stack
 			if s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
+				interp.HaltOverflow()
+			} else {
+
+				s.data[s.top] = interp.Input.TargetAddress.ToU256()
+				s.top++
+
+			}
+		case opcode.BALANCE:
+			if gas.remaining < interp.ForkGas.Balance {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= interp.ForkGas.Balance
+			opBalance(interp, host)
+		case opcode.ORIGIN:
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+
+				addr := host.Caller()
+				s.data[s.top] = addr.ToU256()
+				s.top++
+
+			}
+		case opcode.CALLER:
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+
+				s.data[s.top] = interp.Input.CallerAddress.ToU256()
+				s.top++
+
+			}
+		case opcode.CALLVALUE:
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+
+				s.data[s.top] = interp.Input.CallValue
+				s.top++
+
+			}
+		case opcode.CALLDATALOAD:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top == 0 {
+				interp.HaltUnderflow()
+			} else {
+
+				top := &s.data[s.top-1]
+				offset, overflow := top.Uint64WithOverflow()
+				if overflow {
+					offset = ^uint64(0)
+				}
+				input := interp.Input.Input
+				var word [32]byte
+				if offset < uint64(len(input)) {
+					src := input[offset:]
+					if len(src) >= 32 {
+						copy(word[:], src[:32])
+					} else {
+						copy(word[:], src)
+					}
+				}
+				*top = *new(uint256.Int).SetBytes32((word)[:])
+
+			}
+		case opcode.CALLDATASIZE:
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+
+				s.data[s.top] = uint256.Int{uint64(len(interp.Input.Input)), 0, 0, 0}
+				s.top++
+
+			}
+		case opcode.CALLDATACOPY:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			opCalldatacopy(interp)
+		case opcode.CODESIZE:
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+
+				s.data[s.top] = uint256.Int{uint64(bc.originalLen), 0, 0, 0}
+				s.top++
+
+			}
+		case opcode.CODECOPY:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			opCodecopy(interp)
+		case opcode.GASPRICE:
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+
+				s.data[s.top] = host.EffectiveGasPrice()
+				s.top++
+
+			}
+		case opcode.EXTCODESIZE:
+			if gas.remaining < interp.ForkGas.ExtCodeSize {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= interp.ForkGas.ExtCodeSize
+			opExtcodesize(interp, host)
+		case opcode.EXTCODECOPY:
+			if gas.remaining < interp.ForkGas.ExtCodeSize {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= interp.ForkGas.ExtCodeSize
+			opExtcodecopy(interp, host)
+		case opcode.RETURNDATASIZE:
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Byzantium) {
+				interp.HaltNotActivated()
+			} else {
+				s := interp.Stack
+				if s.top >= StackLimit {
+					interp.HaltOverflow()
+				} else {
+
+					s.data[s.top] = uint256.Int{uint64(len(interp.ReturnData)), 0, 0, 0}
+					s.top++
+
+				}
+			}
+		case opcode.RETURNDATACOPY:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Byzantium) {
+				interp.HaltNotActivated()
+			} else {
+				opReturndatacopy(interp)
+			}
+		case opcode.EXTCODEHASH:
+			if gas.remaining < interp.ForkGas.ExtCodeHash {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= interp.ForkGas.ExtCodeHash
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Constantinople) {
+				interp.HaltNotActivated()
+			} else {
+				opExtcodehash(interp, host)
+			}
+		case opcode.BLOCKHASH:
+			if gas.remaining < spec.GasBlockhash {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBlockhash
+			s := interp.Stack
+			if s.top == 0 {
+				interp.HaltUnderflow()
+			} else {
+
+				top := &s.data[s.top-1]
+				hash := host.BlockHash(*top)
+				*top = hash.ToU256()
+
+			}
+		case opcode.COINBASE:
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+
+				addr := host.Beneficiary()
+				s.data[s.top] = addr.ToU256()
+				s.top++
+
+			}
+		case opcode.TIMESTAMP:
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+
+				s.data[s.top] = host.Timestamp()
+				s.top++
+
+			}
+		case opcode.NUMBER:
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+
+				s.data[s.top] = host.BlockNumber()
+				s.top++
+
+			}
+		case opcode.DIFFICULTY:
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
+			opDifficulty(interp, host)
+		case opcode.GASLIMIT:
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+
+				s.data[s.top] = host.GasLimit()
+				s.top++
+
+			}
+		case opcode.CHAINID:
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Istanbul) {
+				interp.HaltNotActivated()
+			} else {
+				s := interp.Stack
+				if s.top >= StackLimit {
+					interp.HaltOverflow()
+				} else {
+					opChainid(interp, host)
+				}
+			}
+		case opcode.SELFBALANCE:
+			if gas.remaining < spec.GasLow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasLow
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Istanbul) {
+				interp.HaltNotActivated()
+			} else {
+				s := interp.Stack
+				if s.top >= StackLimit {
+					interp.HaltOverflow()
+				} else {
+					opSelfbalance(interp, host)
+				}
+			}
+		case opcode.BASEFEE:
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.London) {
+				interp.HaltNotActivated()
+			} else {
+				s := interp.Stack
+				if s.top >= StackLimit {
+					interp.HaltOverflow()
+				} else {
+					opBasefee(interp, host)
+				}
+			}
+		case opcode.BLOBHASH:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Cancun) {
+				interp.HaltNotActivated()
+			} else {
+				opBlobhash(interp, host)
+			}
+		case opcode.BLOBBASEFEE:
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Cancun) {
+				interp.HaltNotActivated()
+			} else {
+				s := interp.Stack
+				if s.top >= StackLimit {
+					interp.HaltOverflow()
+				} else {
+					opBlobbasefee(interp, host)
+				}
+			}
+		case opcode.SLOTNUM:
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
+			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Amsterdam) {
+				interp.HaltNotActivated()
+			} else {
+				s := interp.Stack
+				if s.top >= StackLimit {
+					interp.HaltOverflow()
+				} else {
+					opSlotnum(interp, host)
+				}
+			}
+		case opcode.POP:
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
+			if interp.Stack.top == 0 {
+				interp.HaltUnderflow()
+			} else {
+
+				interp.Stack.top--
+
+			}
+		case opcode.MLOAD:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+
+			s := interp.Stack
+			if s.top == 0 {
+				interp.HaltUnderflow()
+				return
+			}
+			top := &s.data[s.top-1]
+			if top[1]|top[2]|top[3] == 0 {
+				offset := int(top[0])
+				if offset >= 0 && offset+32 <= interp.Memory.Len() {
+					*top = interp.Memory.GetU256(offset)
+				} else {
+					if interp.ResizeMemory(offset, 32) {
+						*top = interp.Memory.GetU256(offset)
+					}
+				}
+			} else {
+				interp.Halt(InstructionResultInvalidOperandOOG)
+			}
+
+		case opcode.MSTORE:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+
+			s := interp.Stack
+			if s.top < 2 {
+				interp.HaltUnderflow()
+				return
+			}
+			s.top -= 2
+			offsetVal := s.data[s.top+1]
+			value := s.data[s.top]
+			if offsetVal[1]|offsetVal[2]|offsetVal[3] == 0 {
+				offset := int(offsetVal[0])
+				if offset >= 0 && offset+32 <= interp.Memory.Len() {
+					interp.Memory.SetU256(offset, value)
+				} else {
+					if interp.ResizeMemory(offset, 32) {
+						interp.Memory.SetU256(offset, value)
+					}
+				}
+			} else {
+				interp.Halt(InstructionResultInvalidOperandOOG)
+			}
+
+		case opcode.MSTORE8:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			opMstore8(interp)
+		case opcode.SLOAD:
+			if gas.remaining < interp.ForkGas.Sload {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= interp.ForkGas.Sload
+			opSload(interp, host)
+		case opcode.SSTORE:
+			opSstore(interp, host)
+		case opcode.JUMP:
+			if gas.remaining < spec.GasMid {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasMid
+
+			s := interp.Stack
+			if s.top == 0 {
+				interp.HaltUnderflow()
+				return
+			}
+			s.top--
+			target := s.data[s.top]
+			if target[1]|target[2]|target[3] != 0 {
+				interp.Halt(InstructionResultInvalidJump)
+				return
+			}
+			dest := int(target[0])
+			if dest >= bc.originalLen || bc.code[dest] != opcode.JUMPDEST {
+				interp.Halt(InstructionResultInvalidJump)
+				return
+			}
+			if !bc.jumpTableReady {
+				bc.ensureJumpTable()
+			}
+			if bc.jumpTable[dest/8]&(1<<(uint(dest)%8)) == 0 {
+				interp.Halt(InstructionResultInvalidJump)
+				return
+			}
+			bc.pc = dest
+
+		case opcode.JUMPI:
+			if gas.remaining < spec.GasHigh {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasHigh
+
+			s := interp.Stack
+			if s.top < 2 {
+				interp.HaltUnderflow()
+				return
+			}
+			s.top -= 2
+			cond := s.data[s.top]
+			target := s.data[s.top+1]
+			if !cond.IsZero() {
+				if target[1]|target[2]|target[3] != 0 {
+					interp.Halt(InstructionResultInvalidJump)
 					return
 				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
+				dest := int(target[0])
+				if dest >= bc.originalLen || bc.code[dest] != opcode.JUMPDEST {
+					interp.Halt(InstructionResultInvalidJump)
+					return
+				}
+				if !bc.jumpTableReady {
+					bc.ensureJumpTable()
+				}
+				if bc.jumpTable[dest/8]&(1<<(uint(dest)%8)) == 0 {
+					interp.Halt(InstructionResultInvalidJump)
+					return
+				}
+				bc.pc = dest
+			}
+
+		case opcode.PC:
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
+			s := interp.Stack
+			if s.top >= StackLimit {
 				interp.HaltOverflow()
 			} else {
 
@@ -1284,15 +2185,13 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 
 			}
 		case opcode.MSIZE:
-			gasCounter += spec.GasBase
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
 			s := interp.Stack
 			if s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 
@@ -1301,222 +2200,158 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 
 			}
 		case opcode.GAS:
-			gasCounter += spec.GasBase
-			if gas.remaining < gasCounter {
+			if gas.remaining < spec.GasBase {
 				interp.HaltOOG()
 				return
 			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
+			gas.remaining -= spec.GasBase
 			opGas(interp)
 		case opcode.JUMPDEST:
-			gasCounter += spec.GasJumpdest
-			if gas.remaining < gasCounter {
+			if gas.remaining < spec.GasJumpdest {
 				interp.HaltOOG()
 				return
 			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
+			gas.remaining -= spec.GasJumpdest
 		case opcode.TLOAD:
-			gasCounter += spec.GasWarmStorageReadCost
-			if gas.remaining < gasCounter {
+			if gas.remaining < spec.GasWarmStorageReadCost {
 				interp.HaltOOG()
 				return
 			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
+			gas.remaining -= spec.GasWarmStorageReadCost
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Cancun) {
 				interp.HaltNotActivated()
 			} else {
 				opTload(interp, host)
 			}
 		case opcode.TSTORE:
-			gasCounter += spec.GasWarmStorageReadCost
-			if gas.remaining < gasCounter {
+			if gas.remaining < spec.GasWarmStorageReadCost {
 				interp.HaltOOG()
 				return
 			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
+			gas.remaining -= spec.GasWarmStorageReadCost
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Cancun) {
 				interp.HaltNotActivated()
 			} else {
 				opTstore(interp, host)
 			}
 		case opcode.MCOPY:
-			gasCounter += spec.GasVerylow
-			if gas.remaining < gasCounter {
+			if gas.remaining < spec.GasVerylow {
 				interp.HaltOOG()
 				return
 			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
+			gas.remaining -= spec.GasVerylow
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Cancun) {
 				interp.HaltNotActivated()
 			} else {
 				opMcopy(interp)
 			}
 		case opcode.DUPN:
-			gasCounter += spec.GasVerylow
-			if gas.remaining < gasCounter {
+			if gas.remaining < spec.GasVerylow {
 				interp.HaltOOG()
 				return
 			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
+			gas.remaining -= spec.GasVerylow
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Amsterdam) {
 				interp.HaltNotActivated()
 			} else {
 				opDupN(interp)
 			}
 		case opcode.SWAPN:
-			gasCounter += spec.GasVerylow
-			if gas.remaining < gasCounter {
+			if gas.remaining < spec.GasVerylow {
 				interp.HaltOOG()
 				return
 			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
+			gas.remaining -= spec.GasVerylow
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Amsterdam) {
 				interp.HaltNotActivated()
 			} else {
 				opSwapN(interp)
 			}
 		case opcode.EXCHANGE:
-			gasCounter += spec.GasVerylow
-			if gas.remaining < gasCounter {
+			if gas.remaining < spec.GasVerylow {
 				interp.HaltOOG()
 				return
 			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
+			gas.remaining -= spec.GasVerylow
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Amsterdam) {
 				interp.HaltNotActivated()
 			} else {
 				opExchange(interp)
 			}
 		case opcode.CREATE:
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			opCreate(interp, host)
 		case opcode.CALL:
-			gasCounter += interp.ForkGas.Call
-			if gas.remaining < gasCounter {
+			if gas.remaining < interp.ForkGas.Call {
 				interp.HaltOOG()
 				return
 			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
+			gas.remaining -= interp.ForkGas.Call
 			opCall(interp, host)
 		case opcode.CALLCODE:
-			gasCounter += interp.ForkGas.Call
-			if gas.remaining < gasCounter {
+			if gas.remaining < interp.ForkGas.Call {
 				interp.HaltOOG()
 				return
 			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
+			gas.remaining -= interp.ForkGas.Call
 			opCallcode(interp, host)
 		case opcode.RETURN:
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			opReturn(interp)
 		case opcode.DELEGATECALL:
-			gasCounter += interp.ForkGas.Call
-			if gas.remaining < gasCounter {
+			if gas.remaining < interp.ForkGas.Call {
 				interp.HaltOOG()
 				return
 			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
+			gas.remaining -= interp.ForkGas.Call
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Homestead) {
 				interp.HaltNotActivated()
 			} else {
 				opDelegatecall(interp, host)
 			}
 		case opcode.CREATE2:
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Petersburg) {
 				interp.HaltNotActivated()
 			} else {
 				opCreate2(interp, host)
 			}
 		case opcode.STATICCALL:
-			gasCounter += interp.ForkGas.Call
-			if gas.remaining < gasCounter {
+			if gas.remaining < interp.ForkGas.Call {
 				interp.HaltOOG()
 				return
 			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
+			gas.remaining -= interp.ForkGas.Call
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Byzantium) {
 				interp.HaltNotActivated()
 			} else {
 				opStaticcall(interp, host)
 			}
 		case opcode.REVERT:
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Byzantium) {
 				interp.HaltNotActivated()
 			} else {
 				opRevert(interp)
 			}
 		case opcode.INVALID:
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 
 			interp.Halt(InstructionResultInvalidFEOpcode)
 
 		case opcode.SELFDESTRUCT:
-			gasCounter += interp.ForkGas.Selfdestruct
-			if gas.remaining < gasCounter {
+			if gas.remaining < interp.ForkGas.Selfdestruct {
 				interp.HaltOOG()
 				return
 			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
+			gas.remaining -= interp.ForkGas.Selfdestruct
 			opSelfdestruct(interp, host)
 		case opcode.PUSH0:
-			gasCounter += spec.GasBase
+			if gas.remaining < spec.GasBase {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasBase
 			if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Shanghai) {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltNotActivated()
 			} else {
 				s := interp.Stack
 				if s.top >= StackLimit {
-					if gas.remaining < gasCounter {
-						interp.HaltOOG()
-						return
-					}
-					gas.remaining -= gasCounter
-					gasCounter = 0
 					interp.HaltOverflow()
 				} else {
 
@@ -1526,15 +2361,13 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 				}
 			}
 		case opcode.PUSH1:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 
@@ -1544,15 +2377,13 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 
 			}
 		case opcode.PUSH2:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 
@@ -1563,15 +2394,13 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 
 			}
 		case opcode.PUSH3:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 
@@ -1584,15 +2413,13 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 
 			}
 		case opcode.PUSH4:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 
@@ -1605,15 +2432,13 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 
 			}
 		case opcode.PUSH20:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 
@@ -1631,15 +2456,13 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 
 			}
 		case opcode.PUSH32:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 
@@ -1659,15 +2482,13 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 
 			}
 		case opcode.PUSH5, opcode.PUSH6, opcode.PUSH7, opcode.PUSH8, opcode.PUSH9, opcode.PUSH10, opcode.PUSH11, opcode.PUSH12, opcode.PUSH13, opcode.PUSH14, opcode.PUSH15, opcode.PUSH16, opcode.PUSH17, opcode.PUSH18, opcode.PUSH19, opcode.PUSH21, opcode.PUSH22, opcode.PUSH23, opcode.PUSH24, opcode.PUSH25, opcode.PUSH26, opcode.PUSH27, opcode.PUSH28, opcode.PUSH29, opcode.PUSH30, opcode.PUSH31:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				n := int(op - opcode.PUSH0)
@@ -1676,532 +2497,432 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 				s.top++
 			}
 		case opcode.DUP1:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top < 1 || s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[s.top] = s.data[s.top-1]
 				s.top++
 			}
 		case opcode.DUP2:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top < 2 || s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[s.top] = s.data[s.top-2]
 				s.top++
 			}
 		case opcode.DUP3:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top < 3 || s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[s.top] = s.data[s.top-3]
 				s.top++
 			}
 		case opcode.DUP4:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top < 4 || s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[s.top] = s.data[s.top-4]
 				s.top++
 			}
 		case opcode.DUP5:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top < 5 || s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[s.top] = s.data[s.top-5]
 				s.top++
 			}
 		case opcode.DUP6:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top < 6 || s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[s.top] = s.data[s.top-6]
 				s.top++
 			}
 		case opcode.DUP7:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top < 7 || s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[s.top] = s.data[s.top-7]
 				s.top++
 			}
 		case opcode.DUP8:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top < 8 || s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[s.top] = s.data[s.top-8]
 				s.top++
 			}
 		case opcode.DUP9:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top < 9 || s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[s.top] = s.data[s.top-9]
 				s.top++
 			}
 		case opcode.DUP10:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top < 10 || s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[s.top] = s.data[s.top-10]
 				s.top++
 			}
 		case opcode.DUP11:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top < 11 || s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[s.top] = s.data[s.top-11]
 				s.top++
 			}
 		case opcode.DUP12:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top < 12 || s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[s.top] = s.data[s.top-12]
 				s.top++
 			}
 		case opcode.DUP13:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top < 13 || s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[s.top] = s.data[s.top-13]
 				s.top++
 			}
 		case opcode.DUP14:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top < 14 || s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[s.top] = s.data[s.top-14]
 				s.top++
 			}
 		case opcode.DUP15:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top < 15 || s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[s.top] = s.data[s.top-15]
 				s.top++
 			}
 		case opcode.DUP16:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			if s.top < 16 || s.top >= StackLimit {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[s.top] = s.data[s.top-16]
 				s.top++
 			}
 		case opcode.SWAP1:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			t := s.top - 1
 			if t < 1 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[t], s.data[t-1] = s.data[t-1], s.data[t]
 			}
 		case opcode.SWAP2:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			t := s.top - 1
 			if t < 2 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[t], s.data[t-2] = s.data[t-2], s.data[t]
 			}
 		case opcode.SWAP3:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			t := s.top - 1
 			if t < 3 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[t], s.data[t-3] = s.data[t-3], s.data[t]
 			}
 		case opcode.SWAP4:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			t := s.top - 1
 			if t < 4 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[t], s.data[t-4] = s.data[t-4], s.data[t]
 			}
 		case opcode.SWAP5:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			t := s.top - 1
 			if t < 5 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[t], s.data[t-5] = s.data[t-5], s.data[t]
 			}
 		case opcode.SWAP6:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			t := s.top - 1
 			if t < 6 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[t], s.data[t-6] = s.data[t-6], s.data[t]
 			}
 		case opcode.SWAP7:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			t := s.top - 1
 			if t < 7 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[t], s.data[t-7] = s.data[t-7], s.data[t]
 			}
 		case opcode.SWAP8:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			t := s.top - 1
 			if t < 8 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[t], s.data[t-8] = s.data[t-8], s.data[t]
 			}
 		case opcode.SWAP9:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			t := s.top - 1
 			if t < 9 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[t], s.data[t-9] = s.data[t-9], s.data[t]
 			}
 		case opcode.SWAP10:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			t := s.top - 1
 			if t < 10 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[t], s.data[t-10] = s.data[t-10], s.data[t]
 			}
 		case opcode.SWAP11:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			t := s.top - 1
 			if t < 11 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[t], s.data[t-11] = s.data[t-11], s.data[t]
 			}
 		case opcode.SWAP12:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			t := s.top - 1
 			if t < 12 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[t], s.data[t-12] = s.data[t-12], s.data[t]
 			}
 		case opcode.SWAP13:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			t := s.top - 1
 			if t < 13 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[t], s.data[t-13] = s.data[t-13], s.data[t]
 			}
 		case opcode.SWAP14:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			t := s.top - 1
 			if t < 14 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[t], s.data[t-14] = s.data[t-14], s.data[t]
 			}
 		case opcode.SWAP15:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			t := s.top - 1
 			if t < 15 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[t], s.data[t-15] = s.data[t-15], s.data[t]
 			}
 		case opcode.SWAP16:
-			gasCounter += spec.GasVerylow
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
 			s := interp.Stack
 			t := s.top - 1
 			if t < 16 {
-				if gas.remaining < gasCounter {
-					interp.HaltOOG()
-					return
-				}
-				gas.remaining -= gasCounter
-				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
 				s.data[t], s.data[t-16] = s.data[t-16], s.data[t]
 			}
 		case opcode.LOG0:
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			logNImpl(interp, host, 0)
 		case opcode.LOG1:
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			logNImpl(interp, host, 1)
 		case opcode.LOG2:
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			logNImpl(interp, host, 2)
 		case opcode.LOG3:
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			logNImpl(interp, host, 3)
 		case opcode.LOG4:
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			logNImpl(interp, host, 4)
 		default:
-			if gas.remaining < gasCounter {
-				interp.HaltOOG()
-				return
-			}
-			gas.remaining -= gasCounter
-			gasCounter = 0
 			interp.Halt(InstructionResultOpcodeNotFound)
 		}
 	}
