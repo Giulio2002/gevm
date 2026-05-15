@@ -497,33 +497,54 @@ func (e *emitter) emitLog(n int) {
 	e.p("logNImpl(interp, host, %d)\n", n)
 }
 
-// emitPushGeneric emits the combined PUSH5-PUSH31 case (excluding PUSH20 and PUSH32).
-func (e *emitter) emitPushGeneric() {
-	e.p("case ")
-	first := true
-	for i := 5; i <= 31; i++ {
-		if i == 20 {
-			continue // PUSH20 has its own case
-		}
-		if !first {
-			e.p(", ")
-		}
-		if i <= 16 || i == 17 || i == 18 || i == 19 || i == 21 || i == 22 || i == 23 || i == 24 ||
-			i == 25 || i == 26 || i == 27 || i == 28 || i == 29 || i == 30 || i == 31 {
-			e.p("opcode.PUSH%d", i)
-		}
-		first = false
+func pushLimbExpr(n, limb int) string {
+	end := n - limb*8
+	if end <= 0 {
+		return "0"
 	}
-	e.p(":\n")
+	start := end - 8
+	if start < 0 {
+		start = 0
+	}
+	parts := make([]string, 0, end-start)
+	for i := start; i < end; i++ {
+		shift := uint((end - i - 1) * 8)
+		part := fmt.Sprintf("uint64(c[p+%d])", i)
+		if shift != 0 {
+			part = fmt.Sprintf("%s<<%d", part, shift)
+		}
+		parts = append(parts, part)
+	}
+	return strings.Join(parts, " | ")
+}
+
+// emitPushFixed emits a PUSH<n> case with a compile-time immediate width.
+func (e *emitter) emitPushFixed(n int) {
+	e.p("case opcode.PUSH%d:\n", n)
 	e.emitGas("spec.GasVerylow")
 	e.p("s := interp.Stack\n")
 	e.p("if s.top >= StackLimit {\n")
 	e.emitFlushOnError()
 	e.p("interp.HaltOverflow()\n")
 	e.p("} else {\n")
-	e.p("n := int(op - opcode.PUSH0)\n")
-	e.p("s.data[s.top] = *new(uint256.Int).SetBytes(bc.code[bc.pc : bc.pc+n])\n")
-	e.p("bc.pc += n\n")
+	e.p("c := bc.code\n")
+	e.p("p := bc.pc\n")
+	for limb := 0; limb < 4; limb++ {
+		expr := pushLimbExpr(n, limb)
+		if expr != "0" {
+			e.p("l%d := %s\n", limb, expr)
+		}
+	}
+	e.p("bc.pc = p + %d\n", n)
+	limbs := make([]string, 4)
+	for limb := 0; limb < 4; limb++ {
+		if pushLimbExpr(n, limb) == "0" {
+			limbs[limb] = "0"
+		} else {
+			limbs[limb] = fmt.Sprintf("l%d", limb)
+		}
+	}
+	e.p("s.data[s.top] = uint256.Int{%s, %s, %s, %s}\n", limbs[0], limbs[1], limbs[2], limbs[3])
 	e.p("s.top++\n")
 	e.p("}\n")
 }
@@ -564,7 +585,12 @@ func (e *emitter) emitAllCases() {
 		op.mode = modeAccumulate
 		e.emitPush(op)
 	}
-	e.emitPushGeneric()
+	for i := 5; i <= 31; i++ {
+		if i == 20 {
+			continue // PUSH20 has its own hand-specialized case.
+		}
+		e.emitPushFixed(i)
+	}
 	for i := 1; i <= 16; i++ {
 		e.emitDup(i)
 	}
