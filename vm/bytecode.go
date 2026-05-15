@@ -37,6 +37,7 @@ type Bytecode struct {
 // bytecode block. Fork-varying gas is stored as small counters.
 type BasicBlockInfo struct {
 	ConstGas        uint64
+	EndPC           int32
 	StackRequired   int16
 	StackMaxGrowth  int16
 	BalanceOps      uint16
@@ -219,6 +220,7 @@ func (b *Bytecode) ensureBasicBlocks() {
 			return
 		}
 		b.basicBlocks = append(b.basicBlocks, block)
+		b.basicBlocks[len(b.basicBlocks)-1].EndPC = int32(pc)
 		b.blockStarts[start] = uint16(len(b.basicBlocks))
 		if pc == start {
 			pc++

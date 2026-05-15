@@ -233,25 +233,927 @@ func blockInstructionInfo(op byte) blockOpcodeInfo {
 func (DefaultRunner) Run(interp *Interpreter, host Host) {
 	bc := interp.Bytecode
 	gas := &interp.Gas
-	for bc.running {
-		if block := bc.BasicBlockAt(bc.pc); block != nil {
-			baseGas := block.baseGas(interp.ForkGas)
-			if gas.remaining < baseGas {
-				interp.HaltOOG()
-				return
-			}
-			sTop := interp.Stack.top
-			if sTop < int(block.StackRequired) {
-				gas.remaining -= baseGas
-				interp.HaltUnderflow()
-				return
-			}
-			if sTop+int(block.StackMaxGrowth) > StackLimit {
-				gas.remaining -= baseGas
-				interp.HaltOverflow()
-				return
-			}
+	bc.ensureBasicBlocks()
+	if len(bc.basicBlocks) > 1 && bc.originalLen/len(bc.basicBlocks) < 8 {
+		PlainRunner{}.Run(interp, host)
+		return
+	}
+	if len(bc.basicBlocks) == 1 {
+		block := &bc.basicBlocks[0]
+		baseGas := block.baseGas(interp.ForkGas)
+		if gas.remaining < baseGas {
+			interp.HaltOOG()
+			return
+		}
+		sTop := interp.Stack.top
+		if sTop < int(block.StackRequired) {
 			gas.remaining -= baseGas
+			interp.HaltUnderflow()
+			return
+		}
+		if sTop+int(block.StackMaxGrowth) > StackLimit {
+			gas.remaining -= baseGas
+			interp.HaltOverflow()
+			return
+		}
+		gas.remaining -= baseGas
+		for bc.running {
+			op := bc.code[bc.pc]
+			bc.pc++
+
+			switch op {
+			case opcode.STOP:
+
+				interp.Halt(InstructionResultStop)
+
+			case opcode.ADD:
+				s := interp.Stack
+				s.top--
+
+				s.data[s.top-1].Add(&s.data[s.top], &s.data[s.top-1])
+
+			case opcode.MUL:
+				s := interp.Stack
+				s.top--
+
+				a := s.data[s.top]
+				top := &s.data[s.top-1]
+				top.Mul(&a, top)
+
+			case opcode.SUB:
+				s := interp.Stack
+				s.top--
+
+				s.data[s.top-1].Sub(&s.data[s.top], &s.data[s.top-1])
+
+			case opcode.DIV:
+				s := interp.Stack
+				s.top--
+
+				a := s.data[s.top]
+				top := &s.data[s.top-1]
+				if !top.IsZero() {
+					top.Div(&a, top)
+				}
+
+			case opcode.SDIV:
+				s := interp.Stack
+				s.top--
+
+				a := s.data[s.top]
+				top := &s.data[s.top-1]
+				top.SDiv(&a, top)
+
+			case opcode.MOD:
+				s := interp.Stack
+				s.top--
+
+				a := s.data[s.top]
+				top := &s.data[s.top-1]
+				if !top.IsZero() {
+					top.Mod(&a, top)
+				}
+
+			case opcode.SMOD:
+				s := interp.Stack
+				s.top--
+
+				a := s.data[s.top]
+				top := &s.data[s.top-1]
+				top.SMod(&a, top)
+
+			case opcode.ADDMOD:
+				s := interp.Stack
+				s.top -= 2
+
+				a := s.data[s.top+1]
+				b := s.data[s.top]
+				top := &s.data[s.top-1]
+				top.AddMod(&a, &b, top)
+
+			case opcode.MULMOD:
+				s := interp.Stack
+				s.top -= 2
+
+				a := s.data[s.top+1]
+				b := s.data[s.top]
+				top := &s.data[s.top-1]
+				top.MulMod(&a, &b, top)
+
+			case opcode.EXP:
+				opExp(interp)
+			case opcode.SIGNEXTEND:
+				s := interp.Stack
+				s.top--
+
+				ext := s.data[s.top]
+				top := &s.data[s.top-1]
+				top.ExtendSign(top, &ext)
+
+			case opcode.LT:
+				s := interp.Stack
+				s.top--
+
+				if s.data[s.top].Lt(&s.data[s.top-1]) {
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
+				} else {
+					s.data[s.top-1] = uint256.Int{}
+				}
+
+			case opcode.GT:
+				s := interp.Stack
+				s.top--
+
+				if s.data[s.top].Gt(&s.data[s.top-1]) {
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
+				} else {
+					s.data[s.top-1] = uint256.Int{}
+				}
+
+			case opcode.SLT:
+				s := interp.Stack
+				s.top--
+
+				a := &s.data[s.top]
+				b := &s.data[s.top-1]
+				aNeg := a[3] >> 63
+				bNeg := b[3] >> 63
+				var lt bool
+				if aNeg != bNeg {
+					lt = aNeg > bNeg
+				} else {
+					lt = a.Lt(b)
+				}
+				if lt {
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
+				} else {
+					s.data[s.top-1] = uint256.Int{}
+				}
+
+			case opcode.SGT:
+				s := interp.Stack
+				s.top--
+
+				a := &s.data[s.top]
+				b := &s.data[s.top-1]
+				aNeg := a[3] >> 63
+				bNeg := b[3] >> 63
+				var gt bool
+				if aNeg != bNeg {
+					gt = bNeg > aNeg
+				} else {
+					gt = a.Gt(b)
+				}
+				if gt {
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
+				} else {
+					s.data[s.top-1] = uint256.Int{}
+				}
+
+			case opcode.EQ:
+				s := interp.Stack
+				s.top--
+
+				if s.data[s.top].Eq(&s.data[s.top-1]) {
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
+				} else {
+					s.data[s.top-1] = uint256.Int{}
+				}
+
+			case opcode.ISZERO:
+				s := interp.Stack
+
+				if s.data[s.top-1].IsZero() {
+					s.data[s.top-1] = uint256.Int{1, 0, 0, 0}
+				} else {
+					s.data[s.top-1] = uint256.Int{}
+				}
+
+			case opcode.AND:
+				s := interp.Stack
+				s.top--
+
+				s.data[s.top-1].And(&s.data[s.top], &s.data[s.top-1])
+
+			case opcode.OR:
+				s := interp.Stack
+				s.top--
+
+				s.data[s.top-1].Or(&s.data[s.top], &s.data[s.top-1])
+
+			case opcode.XOR:
+				s := interp.Stack
+				s.top--
+
+				s.data[s.top-1].Xor(&s.data[s.top], &s.data[s.top-1])
+
+			case opcode.NOT:
+				s := interp.Stack
+
+				s.data[s.top-1].Not(&s.data[s.top-1])
+
+			case opcode.BYTE:
+				s := interp.Stack
+				s.top--
+
+				a := s.data[s.top]
+				top := &s.data[s.top-1]
+				idx, overflow := a.Uint64WithOverflow()
+				if !overflow && idx < 32 {
+					index := uint256.Int{idx, 0, 0, 0}
+					top.Byte(&index)
+				} else {
+					*top = uint256.Int{}
+				}
+
+			case opcode.SHL:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Constantinople) {
+					interp.HaltNotActivated()
+				} else {
+					s := interp.Stack
+					s.top--
+
+					shift := s.data[s.top]
+					top := &s.data[s.top-1]
+					sa, overflow := shift.Uint64WithOverflow()
+					if !overflow && sa < 256 {
+						top.Lsh(top, uint(sa))
+					} else {
+						*top = uint256.Int{}
+					}
+
+				}
+			case opcode.SHR:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Constantinople) {
+					interp.HaltNotActivated()
+				} else {
+					s := interp.Stack
+					s.top--
+
+					shift := s.data[s.top]
+					top := &s.data[s.top-1]
+					sa, overflow := shift.Uint64WithOverflow()
+					if !overflow && sa < 256 {
+						top.Rsh(top, uint(sa))
+					} else {
+						*top = uint256.Int{}
+					}
+
+				}
+			case opcode.SAR:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Constantinople) {
+					interp.HaltNotActivated()
+				} else {
+					s := interp.Stack
+					s.top--
+
+					shift := s.data[s.top]
+					top := &s.data[s.top-1]
+					sa, overflow := shift.Uint64WithOverflow()
+					if !overflow && sa < 256 {
+						top.SRsh(top, uint(sa))
+					} else if top[3]&(1<<63) != 0 {
+						*top = uint256.Int{^uint64(0), ^uint64(0), ^uint64(0), ^uint64(0)}
+					} else {
+						*top = uint256.Int{}
+					}
+
+				}
+			case opcode.CLZ:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Osaka) {
+					interp.HaltNotActivated()
+				} else {
+					s := interp.Stack
+
+					top := &s.data[s.top-1]
+					*top = uint256.Int{uint64(256 - top.BitLen()), 0, 0, 0}
+
+				}
+			case opcode.KECCAK256:
+				opKeccak256(interp)
+			case opcode.ADDRESS:
+				s := interp.Stack
+
+				s.data[s.top] = interp.Input.TargetAddress.ToU256()
+				s.top++
+
+			case opcode.BALANCE:
+				opBalance(interp, host)
+			case opcode.ORIGIN:
+				s := interp.Stack
+
+				addr := host.Caller()
+				s.data[s.top] = addr.ToU256()
+				s.top++
+
+			case opcode.CALLER:
+				s := interp.Stack
+
+				s.data[s.top] = interp.Input.CallerAddress.ToU256()
+				s.top++
+
+			case opcode.CALLVALUE:
+				s := interp.Stack
+
+				s.data[s.top] = interp.Input.CallValue
+				s.top++
+
+			case opcode.CALLDATALOAD:
+				s := interp.Stack
+
+				top := &s.data[s.top-1]
+				offset, overflow := top.Uint64WithOverflow()
+				if overflow {
+					offset = ^uint64(0)
+				}
+				input := interp.Input.Input
+				var word [32]byte
+				if offset < uint64(len(input)) {
+					src := input[offset:]
+					if len(src) >= 32 {
+						copy(word[:], src[:32])
+					} else {
+						copy(word[:], src)
+					}
+				}
+				*top = *new(uint256.Int).SetBytes32((word)[:])
+
+			case opcode.CALLDATASIZE:
+				s := interp.Stack
+
+				s.data[s.top] = uint256.Int{uint64(len(interp.Input.Input)), 0, 0, 0}
+				s.top++
+
+			case opcode.CALLDATACOPY:
+				opCalldatacopy(interp)
+			case opcode.CODESIZE:
+				s := interp.Stack
+
+				s.data[s.top] = uint256.Int{uint64(bc.originalLen), 0, 0, 0}
+				s.top++
+
+			case opcode.CODECOPY:
+				opCodecopy(interp)
+			case opcode.GASPRICE:
+				s := interp.Stack
+
+				s.data[s.top] = host.EffectiveGasPrice()
+				s.top++
+
+			case opcode.EXTCODESIZE:
+				opExtcodesize(interp, host)
+			case opcode.EXTCODECOPY:
+				opExtcodecopy(interp, host)
+			case opcode.RETURNDATASIZE:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Byzantium) {
+					interp.HaltNotActivated()
+				} else {
+					s := interp.Stack
+
+					s.data[s.top] = uint256.Int{uint64(len(interp.ReturnData)), 0, 0, 0}
+					s.top++
+
+				}
+			case opcode.RETURNDATACOPY:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Byzantium) {
+					interp.HaltNotActivated()
+				} else {
+					opReturndatacopy(interp)
+				}
+			case opcode.EXTCODEHASH:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Constantinople) {
+					interp.HaltNotActivated()
+				} else {
+					opExtcodehash(interp, host)
+				}
+			case opcode.BLOCKHASH:
+				s := interp.Stack
+
+				top := &s.data[s.top-1]
+				hash := host.BlockHash(*top)
+				*top = hash.ToU256()
+
+			case opcode.COINBASE:
+				s := interp.Stack
+
+				addr := host.Beneficiary()
+				s.data[s.top] = addr.ToU256()
+				s.top++
+
+			case opcode.TIMESTAMP:
+				s := interp.Stack
+
+				s.data[s.top] = host.Timestamp()
+				s.top++
+
+			case opcode.NUMBER:
+				s := interp.Stack
+
+				s.data[s.top] = host.BlockNumber()
+				s.top++
+
+			case opcode.DIFFICULTY:
+				opDifficulty(interp, host)
+			case opcode.GASLIMIT:
+				s := interp.Stack
+
+				s.data[s.top] = host.GasLimit()
+				s.top++
+
+			case opcode.CHAINID:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Istanbul) {
+					interp.HaltNotActivated()
+				} else {
+					opChainid(interp, host)
+				}
+			case opcode.SELFBALANCE:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Istanbul) {
+					interp.HaltNotActivated()
+				} else {
+					opSelfbalance(interp, host)
+				}
+			case opcode.BASEFEE:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.London) {
+					interp.HaltNotActivated()
+				} else {
+					opBasefee(interp, host)
+				}
+			case opcode.BLOBHASH:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Cancun) {
+					interp.HaltNotActivated()
+				} else {
+					opBlobhash(interp, host)
+				}
+			case opcode.BLOBBASEFEE:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Cancun) {
+					interp.HaltNotActivated()
+				} else {
+					opBlobbasefee(interp, host)
+				}
+			case opcode.SLOTNUM:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Amsterdam) {
+					interp.HaltNotActivated()
+				} else {
+					opSlotnum(interp, host)
+				}
+			case opcode.POP:
+
+				interp.Stack.top--
+
+			case opcode.MLOAD:
+
+				s := interp.Stack
+				if s.top == 0 {
+					interp.HaltUnderflow()
+					return
+				}
+				top := &s.data[s.top-1]
+				if top[1]|top[2]|top[3] == 0 {
+					offset := int(top[0])
+					if offset >= 0 && offset+32 <= interp.Memory.Len() {
+						*top = interp.Memory.GetU256(offset)
+					} else {
+						if interp.ResizeMemory(offset, 32) {
+							*top = interp.Memory.GetU256(offset)
+						}
+					}
+				} else {
+					interp.Halt(InstructionResultInvalidOperandOOG)
+				}
+
+			case opcode.MSTORE:
+
+				s := interp.Stack
+				if s.top < 2 {
+					interp.HaltUnderflow()
+					return
+				}
+				s.top -= 2
+				offsetVal := s.data[s.top+1]
+				value := s.data[s.top]
+				if offsetVal[1]|offsetVal[2]|offsetVal[3] == 0 {
+					offset := int(offsetVal[0])
+					if offset >= 0 && offset+32 <= interp.Memory.Len() {
+						interp.Memory.SetU256(offset, value)
+					} else {
+						if interp.ResizeMemory(offset, 32) {
+							interp.Memory.SetU256(offset, value)
+						}
+					}
+				} else {
+					interp.Halt(InstructionResultInvalidOperandOOG)
+				}
+
+			case opcode.MSTORE8:
+				opMstore8(interp)
+			case opcode.SLOAD:
+				opSload(interp, host)
+			case opcode.SSTORE:
+				opSstore(interp, host)
+			case opcode.JUMP:
+
+				s := interp.Stack
+				if s.top == 0 {
+					interp.HaltUnderflow()
+					return
+				}
+				s.top--
+				target := s.data[s.top]
+				if target[1]|target[2]|target[3] != 0 {
+					interp.Halt(InstructionResultInvalidJump)
+					return
+				}
+				dest := int(target[0])
+				if dest >= bc.originalLen || bc.code[dest] != opcode.JUMPDEST {
+					interp.Halt(InstructionResultInvalidJump)
+					return
+				}
+				if !bc.jumpTableReady {
+					bc.ensureJumpTable()
+				}
+				if bc.jumpTable[dest/8]&(1<<(uint(dest)%8)) == 0 {
+					interp.Halt(InstructionResultInvalidJump)
+					return
+				}
+				bc.pc = dest
+
+			case opcode.JUMPI:
+
+				s := interp.Stack
+				if s.top < 2 {
+					interp.HaltUnderflow()
+					return
+				}
+				s.top -= 2
+				cond := s.data[s.top]
+				target := s.data[s.top+1]
+				if !cond.IsZero() {
+					if target[1]|target[2]|target[3] != 0 {
+						interp.Halt(InstructionResultInvalidJump)
+						return
+					}
+					dest := int(target[0])
+					if dest >= bc.originalLen || bc.code[dest] != opcode.JUMPDEST {
+						interp.Halt(InstructionResultInvalidJump)
+						return
+					}
+					if !bc.jumpTableReady {
+						bc.ensureJumpTable()
+					}
+					if bc.jumpTable[dest/8]&(1<<(uint(dest)%8)) == 0 {
+						interp.Halt(InstructionResultInvalidJump)
+						return
+					}
+					bc.pc = dest
+				}
+
+			case opcode.PC:
+				s := interp.Stack
+
+				s.data[s.top] = uint256.Int{uint64(bc.pc - 1), 0, 0, 0}
+				s.top++
+
+			case opcode.MSIZE:
+				s := interp.Stack
+
+				s.data[s.top] = uint256.Int{uint64(interp.Memory.Len()), 0, 0, 0}
+				s.top++
+
+			case opcode.GAS:
+				opGas(interp)
+			case opcode.JUMPDEST:
+			case opcode.TLOAD:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Cancun) {
+					interp.HaltNotActivated()
+				} else {
+					opTload(interp, host)
+				}
+			case opcode.TSTORE:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Cancun) {
+					interp.HaltNotActivated()
+				} else {
+					opTstore(interp, host)
+				}
+			case opcode.MCOPY:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Cancun) {
+					interp.HaltNotActivated()
+				} else {
+					opMcopy(interp)
+				}
+			case opcode.DUPN:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Amsterdam) {
+					interp.HaltNotActivated()
+				} else {
+					opDupN(interp)
+				}
+			case opcode.SWAPN:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Amsterdam) {
+					interp.HaltNotActivated()
+				} else {
+					opSwapN(interp)
+				}
+			case opcode.EXCHANGE:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Amsterdam) {
+					interp.HaltNotActivated()
+				} else {
+					opExchange(interp)
+				}
+			case opcode.CREATE:
+				opCreate(interp, host)
+			case opcode.CALL:
+				opCall(interp, host)
+			case opcode.CALLCODE:
+				opCallcode(interp, host)
+			case opcode.RETURN:
+				opReturn(interp)
+			case opcode.DELEGATECALL:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Homestead) {
+					interp.HaltNotActivated()
+				} else {
+					opDelegatecall(interp, host)
+				}
+			case opcode.CREATE2:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Petersburg) {
+					interp.HaltNotActivated()
+				} else {
+					opCreate2(interp, host)
+				}
+			case opcode.STATICCALL:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Byzantium) {
+					interp.HaltNotActivated()
+				} else {
+					opStaticcall(interp, host)
+				}
+			case opcode.REVERT:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Byzantium) {
+					interp.HaltNotActivated()
+				} else {
+					opRevert(interp)
+				}
+			case opcode.INVALID:
+
+				interp.Halt(InstructionResultInvalidFEOpcode)
+
+			case opcode.SELFDESTRUCT:
+				opSelfdestruct(interp, host)
+			case opcode.PUSH0:
+				if !interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Shanghai) {
+					interp.HaltNotActivated()
+				} else {
+					s := interp.Stack
+
+					s.data[s.top] = uint256.Int{}
+					s.top++
+
+				}
+			case opcode.PUSH1:
+				s := interp.Stack
+
+				s.data[s.top] = uint256.Int{uint64(bc.code[bc.pc]), 0, 0, 0}
+				bc.pc++
+				s.top++
+
+			case opcode.PUSH2:
+				s := interp.Stack
+
+				v := uint64(bc.code[bc.pc])<<8 | uint64(bc.code[bc.pc+1])
+				bc.pc += 2
+				s.data[s.top] = uint256.Int{v, 0, 0, 0}
+				s.top++
+
+			case opcode.PUSH3:
+				s := interp.Stack
+
+				c := bc.code
+				p := bc.pc
+				v := uint64(c[p])<<16 | uint64(c[p+1])<<8 | uint64(c[p+2])
+				bc.pc = p + 3
+				s.data[s.top] = uint256.Int{v, 0, 0, 0}
+				s.top++
+
+			case opcode.PUSH4:
+				s := interp.Stack
+
+				c := bc.code
+				p := bc.pc
+				v := uint64(c[p])<<24 | uint64(c[p+1])<<16 | uint64(c[p+2])<<8 | uint64(c[p+3])
+				bc.pc = p + 4
+				s.data[s.top] = uint256.Int{v, 0, 0, 0}
+				s.top++
+
+			case opcode.PUSH20:
+				s := interp.Stack
+
+				c := bc.code
+				p := bc.pc
+				// 20 bytes = limb2 (4 bytes) + limb1 (8 bytes) + limb0 (8 bytes)
+				l2 := uint64(c[p])<<24 | uint64(c[p+1])<<16 | uint64(c[p+2])<<8 | uint64(c[p+3])
+				l1 := uint64(c[p+4])<<56 | uint64(c[p+5])<<48 | uint64(c[p+6])<<40 | uint64(c[p+7])<<32 |
+					uint64(c[p+8])<<24 | uint64(c[p+9])<<16 | uint64(c[p+10])<<8 | uint64(c[p+11])
+				l0 := uint64(c[p+12])<<56 | uint64(c[p+13])<<48 | uint64(c[p+14])<<40 | uint64(c[p+15])<<32 |
+					uint64(c[p+16])<<24 | uint64(c[p+17])<<16 | uint64(c[p+18])<<8 | uint64(c[p+19])
+				bc.pc = p + 20
+				s.data[s.top] = uint256.Int{l0, l1, l2, 0}
+				s.top++
+
+			case opcode.PUSH32:
+				s := interp.Stack
+
+				c := bc.code
+				p := bc.pc
+				l3 := uint64(c[p])<<56 | uint64(c[p+1])<<48 | uint64(c[p+2])<<40 | uint64(c[p+3])<<32 |
+					uint64(c[p+4])<<24 | uint64(c[p+5])<<16 | uint64(c[p+6])<<8 | uint64(c[p+7])
+				l2 := uint64(c[p+8])<<56 | uint64(c[p+9])<<48 | uint64(c[p+10])<<40 | uint64(c[p+11])<<32 |
+					uint64(c[p+12])<<24 | uint64(c[p+13])<<16 | uint64(c[p+14])<<8 | uint64(c[p+15])
+				l1 := uint64(c[p+16])<<56 | uint64(c[p+17])<<48 | uint64(c[p+18])<<40 | uint64(c[p+19])<<32 |
+					uint64(c[p+20])<<24 | uint64(c[p+21])<<16 | uint64(c[p+22])<<8 | uint64(c[p+23])
+				l0 := uint64(c[p+24])<<56 | uint64(c[p+25])<<48 | uint64(c[p+26])<<40 | uint64(c[p+27])<<32 |
+					uint64(c[p+28])<<24 | uint64(c[p+29])<<16 | uint64(c[p+30])<<8 | uint64(c[p+31])
+				bc.pc = p + 32
+				s.data[s.top] = uint256.Int{l0, l1, l2, l3}
+				s.top++
+
+			case opcode.PUSH5, opcode.PUSH6, opcode.PUSH7, opcode.PUSH8, opcode.PUSH9, opcode.PUSH10, opcode.PUSH11, opcode.PUSH12, opcode.PUSH13, opcode.PUSH14, opcode.PUSH15, opcode.PUSH16, opcode.PUSH17, opcode.PUSH18, opcode.PUSH19, opcode.PUSH21, opcode.PUSH22, opcode.PUSH23, opcode.PUSH24, opcode.PUSH25, opcode.PUSH26, opcode.PUSH27, opcode.PUSH28, opcode.PUSH29, opcode.PUSH30, opcode.PUSH31:
+				s := interp.Stack
+				n := int(op - opcode.PUSH0)
+				s.data[s.top] = *new(uint256.Int).SetBytes(bc.code[bc.pc : bc.pc+n])
+				bc.pc += n
+				s.top++
+			case opcode.DUP1:
+				s := interp.Stack
+				s.data[s.top] = s.data[s.top-1]
+				s.top++
+			case opcode.DUP2:
+				s := interp.Stack
+				s.data[s.top] = s.data[s.top-2]
+				s.top++
+			case opcode.DUP3:
+				s := interp.Stack
+				s.data[s.top] = s.data[s.top-3]
+				s.top++
+			case opcode.DUP4:
+				s := interp.Stack
+				s.data[s.top] = s.data[s.top-4]
+				s.top++
+			case opcode.DUP5:
+				s := interp.Stack
+				s.data[s.top] = s.data[s.top-5]
+				s.top++
+			case opcode.DUP6:
+				s := interp.Stack
+				s.data[s.top] = s.data[s.top-6]
+				s.top++
+			case opcode.DUP7:
+				s := interp.Stack
+				s.data[s.top] = s.data[s.top-7]
+				s.top++
+			case opcode.DUP8:
+				s := interp.Stack
+				s.data[s.top] = s.data[s.top-8]
+				s.top++
+			case opcode.DUP9:
+				s := interp.Stack
+				s.data[s.top] = s.data[s.top-9]
+				s.top++
+			case opcode.DUP10:
+				s := interp.Stack
+				s.data[s.top] = s.data[s.top-10]
+				s.top++
+			case opcode.DUP11:
+				s := interp.Stack
+				s.data[s.top] = s.data[s.top-11]
+				s.top++
+			case opcode.DUP12:
+				s := interp.Stack
+				s.data[s.top] = s.data[s.top-12]
+				s.top++
+			case opcode.DUP13:
+				s := interp.Stack
+				s.data[s.top] = s.data[s.top-13]
+				s.top++
+			case opcode.DUP14:
+				s := interp.Stack
+				s.data[s.top] = s.data[s.top-14]
+				s.top++
+			case opcode.DUP15:
+				s := interp.Stack
+				s.data[s.top] = s.data[s.top-15]
+				s.top++
+			case opcode.DUP16:
+				s := interp.Stack
+				s.data[s.top] = s.data[s.top-16]
+				s.top++
+			case opcode.SWAP1:
+				s := interp.Stack
+				t := s.top - 1
+				s.data[t], s.data[t-1] = s.data[t-1], s.data[t]
+			case opcode.SWAP2:
+				s := interp.Stack
+				t := s.top - 1
+				s.data[t], s.data[t-2] = s.data[t-2], s.data[t]
+			case opcode.SWAP3:
+				s := interp.Stack
+				t := s.top - 1
+				s.data[t], s.data[t-3] = s.data[t-3], s.data[t]
+			case opcode.SWAP4:
+				s := interp.Stack
+				t := s.top - 1
+				s.data[t], s.data[t-4] = s.data[t-4], s.data[t]
+			case opcode.SWAP5:
+				s := interp.Stack
+				t := s.top - 1
+				s.data[t], s.data[t-5] = s.data[t-5], s.data[t]
+			case opcode.SWAP6:
+				s := interp.Stack
+				t := s.top - 1
+				s.data[t], s.data[t-6] = s.data[t-6], s.data[t]
+			case opcode.SWAP7:
+				s := interp.Stack
+				t := s.top - 1
+				s.data[t], s.data[t-7] = s.data[t-7], s.data[t]
+			case opcode.SWAP8:
+				s := interp.Stack
+				t := s.top - 1
+				s.data[t], s.data[t-8] = s.data[t-8], s.data[t]
+			case opcode.SWAP9:
+				s := interp.Stack
+				t := s.top - 1
+				s.data[t], s.data[t-9] = s.data[t-9], s.data[t]
+			case opcode.SWAP10:
+				s := interp.Stack
+				t := s.top - 1
+				s.data[t], s.data[t-10] = s.data[t-10], s.data[t]
+			case opcode.SWAP11:
+				s := interp.Stack
+				t := s.top - 1
+				s.data[t], s.data[t-11] = s.data[t-11], s.data[t]
+			case opcode.SWAP12:
+				s := interp.Stack
+				t := s.top - 1
+				s.data[t], s.data[t-12] = s.data[t-12], s.data[t]
+			case opcode.SWAP13:
+				s := interp.Stack
+				t := s.top - 1
+				s.data[t], s.data[t-13] = s.data[t-13], s.data[t]
+			case opcode.SWAP14:
+				s := interp.Stack
+				t := s.top - 1
+				s.data[t], s.data[t-14] = s.data[t-14], s.data[t]
+			case opcode.SWAP15:
+				s := interp.Stack
+				t := s.top - 1
+				s.data[t], s.data[t-15] = s.data[t-15], s.data[t]
+			case opcode.SWAP16:
+				s := interp.Stack
+				t := s.top - 1
+				s.data[t], s.data[t-16] = s.data[t-16], s.data[t]
+			case opcode.LOG0:
+				logNImpl(interp, host, 0)
+			case opcode.LOG1:
+				logNImpl(interp, host, 1)
+			case opcode.LOG2:
+				logNImpl(interp, host, 2)
+			case opcode.LOG3:
+				logNImpl(interp, host, 3)
+			case opcode.LOG4:
+				logNImpl(interp, host, 4)
+			default:
+				interp.Halt(InstructionResultOpcodeNotFound)
+			}
+		}
+		return
+	}
+	blockStartPC := -1
+	blockEndPC := 0
+	for bc.running {
+		if bc.pc < blockStartPC || bc.pc >= blockEndPC {
+			block := bc.BasicBlockAt(bc.pc)
+			if block != nil {
+				blockStartPC = bc.pc
+				blockEndPC = int(block.EndPC)
+			} else {
+				blockStartPC = bc.pc
+				blockEndPC = bc.pc + 1
+			}
+			if block != nil {
+				baseGas := block.baseGas(interp.ForkGas)
+				if gas.remaining < baseGas {
+					interp.HaltOOG()
+					return
+				}
+				sTop := interp.Stack.top
+				if sTop < int(block.StackRequired) {
+					gas.remaining -= baseGas
+					interp.HaltUnderflow()
+					return
+				}
+				if sTop+int(block.StackMaxGrowth) > StackLimit {
+					gas.remaining -= baseGas
+					interp.HaltOverflow()
+					return
+				}
+				gas.remaining -= baseGas
+			}
 		}
 		op := bc.code[bc.pc]
 		bc.pc++

@@ -656,8 +656,13 @@ func (e *emitter) emitRunFunc() {
 func (DefaultRunner) Run(interp *Interpreter, host Host) {
 bc := interp.Bytecode
 gas := &interp.Gas
-for bc.running {
-if block := bc.BasicBlockAt(bc.pc); block != nil {
+bc.ensureBasicBlocks()
+if len(bc.basicBlocks) > 1 && bc.originalLen/len(bc.basicBlocks) < 8 {
+	PlainRunner{}.Run(interp, host)
+	return
+}
+if len(bc.basicBlocks) == 1 {
+	block := &bc.basicBlocks[0]
 	baseGas := block.baseGas(interp.ForkGas)
 	if gas.remaining < baseGas {
 		interp.HaltOOG()
@@ -675,6 +680,48 @@ if block := bc.BasicBlockAt(bc.pc); block != nil {
 		return
 	}
 	gas.remaining -= baseGas
+	for bc.running {
+		op := bc.code[bc.pc]
+		bc.pc++
+
+		switch op {
+`)
+	e.emitAllCases()
+	e.p(`		}
+	}
+	return
+}
+blockStartPC := -1
+blockEndPC := 0
+for bc.running {
+if bc.pc < blockStartPC || bc.pc >= blockEndPC {
+	block := bc.BasicBlockAt(bc.pc)
+	if block != nil {
+		blockStartPC = bc.pc
+		blockEndPC = int(block.EndPC)
+	} else {
+		blockStartPC = bc.pc
+		blockEndPC = bc.pc + 1
+	}
+	if block != nil {
+	baseGas := block.baseGas(interp.ForkGas)
+	if gas.remaining < baseGas {
+		interp.HaltOOG()
+		return
+	}
+	sTop := interp.Stack.top
+	if sTop < int(block.StackRequired) {
+		gas.remaining -= baseGas
+		interp.HaltUnderflow()
+		return
+	}
+	if sTop+int(block.StackMaxGrowth) > StackLimit {
+		gas.remaining -= baseGas
+		interp.HaltOverflow()
+		return
+	}
+	gas.remaining -= baseGas
+	}
 }
 op := bc.code[bc.pc]
 bc.pc++
