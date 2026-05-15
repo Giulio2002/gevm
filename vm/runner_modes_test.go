@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/Giulio2002/gevm/opcode"
@@ -87,6 +88,26 @@ func TestTracingRunnerWithoutOpcodeHookUsesDefaultPath(t *testing.T) {
 	}
 	if fast.StackLen() != tracing.StackLen() {
 		t.Fatalf("stack len mismatch: fast=%d tracing=%d", fast.StackLen(), tracing.StackLen())
+	}
+}
+
+func TestTracingRunnerReportsUnbatchedOpcodeGas(t *testing.T) {
+	code := []byte{byte(opcode.PUSH1), 1, byte(opcode.PUSH1), 2, byte(opcode.ADD), byte(opcode.STOP)}
+	var got []uint64
+	hooks := &Hooks{
+		OnOpcode: func(_ uint64, _ byte, gas uint64, _ uint64, _ OpContext, _ []byte, _ int, _ error) {
+			got = append(got, gas)
+		},
+	}
+
+	trace := runWithRunner(NewTracingRunner(hooks, spec.Prague), code, 100)
+	if trace.HaltResult != InstructionResultStop {
+		t.Fatalf("halt result: got %v, want %v", trace.HaltResult, InstructionResultStop)
+	}
+
+	want := []uint64{100, 97, 94, 91}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("opcode gas mismatch: got %v, want %v", got, want)
 	}
 }
 

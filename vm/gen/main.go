@@ -4,10 +4,11 @@
 //
 // The emitter is parameterised by a `tracing` flag. When false it produces
 // Run() — the fast path with a gas-counter accumulator and zero tracing
-// overhead. When true it produces RunWithTracing() — per-opcode gas
-// deduction, OnOpcode/OnFault hooks, and a DebugGasTable lookup for cost.
+// overhead. When true it produces TracingRunner.Run() — the opcode path with
+// immediate per-opcode gas deduction, OnOpcode/OnFault hooks, and a
+// DebugGasTable lookup for cost.
 //
-// Usage: go generate ./internal/vm/...
+// Usage: go generate ./vm
 package main
 
 import (
