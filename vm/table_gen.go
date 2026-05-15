@@ -1657,7 +1657,7 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 				s.top++
 
 			}
-		case opcode.PUSH5, opcode.PUSH6, opcode.PUSH7, opcode.PUSH8, opcode.PUSH9, opcode.PUSH10, opcode.PUSH11, opcode.PUSH12, opcode.PUSH13, opcode.PUSH14, opcode.PUSH15, opcode.PUSH16, opcode.PUSH17, opcode.PUSH18, opcode.PUSH19, opcode.PUSH21, opcode.PUSH22, opcode.PUSH23, opcode.PUSH24, opcode.PUSH25, opcode.PUSH26, opcode.PUSH27, opcode.PUSH28, opcode.PUSH29, opcode.PUSH30, opcode.PUSH31:
+		case opcode.PUSH5:
 			gasCounter += spec.GasVerylow
 			s := interp.Stack
 			if s.top >= StackLimit {
@@ -1669,9 +1669,529 @@ func (DefaultRunner) Run(interp *Interpreter, host Host) {
 				gasCounter = 0
 				interp.HaltOverflow()
 			} else {
-				n := int(op - opcode.PUSH0)
-				s.data[s.top] = *new(uint256.Int).SetBytes(bc.code[bc.pc : bc.pc+n])
-				bc.pc += n
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+0])<<32 | uint64(c[p+1])<<24 | uint64(c[p+2])<<16 | uint64(c[p+3])<<8 | uint64(c[p+4])
+				bc.pc = p + 5
+				s.data[s.top] = uint256.Int{l0, 0, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH6:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+0])<<40 | uint64(c[p+1])<<32 | uint64(c[p+2])<<24 | uint64(c[p+3])<<16 | uint64(c[p+4])<<8 | uint64(c[p+5])
+				bc.pc = p + 6
+				s.data[s.top] = uint256.Int{l0, 0, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH7:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+0])<<48 | uint64(c[p+1])<<40 | uint64(c[p+2])<<32 | uint64(c[p+3])<<24 | uint64(c[p+4])<<16 | uint64(c[p+5])<<8 | uint64(c[p+6])
+				bc.pc = p + 7
+				s.data[s.top] = uint256.Int{l0, 0, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH8:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+0])<<56 | uint64(c[p+1])<<48 | uint64(c[p+2])<<40 | uint64(c[p+3])<<32 | uint64(c[p+4])<<24 | uint64(c[p+5])<<16 | uint64(c[p+6])<<8 | uint64(c[p+7])
+				bc.pc = p + 8
+				s.data[s.top] = uint256.Int{l0, 0, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH9:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+1])<<56 | uint64(c[p+2])<<48 | uint64(c[p+3])<<40 | uint64(c[p+4])<<32 | uint64(c[p+5])<<24 | uint64(c[p+6])<<16 | uint64(c[p+7])<<8 | uint64(c[p+8])
+				l1 := uint64(c[p+0])
+				bc.pc = p + 9
+				s.data[s.top] = uint256.Int{l0, l1, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH10:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+2])<<56 | uint64(c[p+3])<<48 | uint64(c[p+4])<<40 | uint64(c[p+5])<<32 | uint64(c[p+6])<<24 | uint64(c[p+7])<<16 | uint64(c[p+8])<<8 | uint64(c[p+9])
+				l1 := uint64(c[p+0])<<8 | uint64(c[p+1])
+				bc.pc = p + 10
+				s.data[s.top] = uint256.Int{l0, l1, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH11:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+3])<<56 | uint64(c[p+4])<<48 | uint64(c[p+5])<<40 | uint64(c[p+6])<<32 | uint64(c[p+7])<<24 | uint64(c[p+8])<<16 | uint64(c[p+9])<<8 | uint64(c[p+10])
+				l1 := uint64(c[p+0])<<16 | uint64(c[p+1])<<8 | uint64(c[p+2])
+				bc.pc = p + 11
+				s.data[s.top] = uint256.Int{l0, l1, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH12:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+4])<<56 | uint64(c[p+5])<<48 | uint64(c[p+6])<<40 | uint64(c[p+7])<<32 | uint64(c[p+8])<<24 | uint64(c[p+9])<<16 | uint64(c[p+10])<<8 | uint64(c[p+11])
+				l1 := uint64(c[p+0])<<24 | uint64(c[p+1])<<16 | uint64(c[p+2])<<8 | uint64(c[p+3])
+				bc.pc = p + 12
+				s.data[s.top] = uint256.Int{l0, l1, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH13:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+5])<<56 | uint64(c[p+6])<<48 | uint64(c[p+7])<<40 | uint64(c[p+8])<<32 | uint64(c[p+9])<<24 | uint64(c[p+10])<<16 | uint64(c[p+11])<<8 | uint64(c[p+12])
+				l1 := uint64(c[p+0])<<32 | uint64(c[p+1])<<24 | uint64(c[p+2])<<16 | uint64(c[p+3])<<8 | uint64(c[p+4])
+				bc.pc = p + 13
+				s.data[s.top] = uint256.Int{l0, l1, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH14:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+6])<<56 | uint64(c[p+7])<<48 | uint64(c[p+8])<<40 | uint64(c[p+9])<<32 | uint64(c[p+10])<<24 | uint64(c[p+11])<<16 | uint64(c[p+12])<<8 | uint64(c[p+13])
+				l1 := uint64(c[p+0])<<40 | uint64(c[p+1])<<32 | uint64(c[p+2])<<24 | uint64(c[p+3])<<16 | uint64(c[p+4])<<8 | uint64(c[p+5])
+				bc.pc = p + 14
+				s.data[s.top] = uint256.Int{l0, l1, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH15:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+7])<<56 | uint64(c[p+8])<<48 | uint64(c[p+9])<<40 | uint64(c[p+10])<<32 | uint64(c[p+11])<<24 | uint64(c[p+12])<<16 | uint64(c[p+13])<<8 | uint64(c[p+14])
+				l1 := uint64(c[p+0])<<48 | uint64(c[p+1])<<40 | uint64(c[p+2])<<32 | uint64(c[p+3])<<24 | uint64(c[p+4])<<16 | uint64(c[p+5])<<8 | uint64(c[p+6])
+				bc.pc = p + 15
+				s.data[s.top] = uint256.Int{l0, l1, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH16:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+8])<<56 | uint64(c[p+9])<<48 | uint64(c[p+10])<<40 | uint64(c[p+11])<<32 | uint64(c[p+12])<<24 | uint64(c[p+13])<<16 | uint64(c[p+14])<<8 | uint64(c[p+15])
+				l1 := uint64(c[p+0])<<56 | uint64(c[p+1])<<48 | uint64(c[p+2])<<40 | uint64(c[p+3])<<32 | uint64(c[p+4])<<24 | uint64(c[p+5])<<16 | uint64(c[p+6])<<8 | uint64(c[p+7])
+				bc.pc = p + 16
+				s.data[s.top] = uint256.Int{l0, l1, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH17:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+9])<<56 | uint64(c[p+10])<<48 | uint64(c[p+11])<<40 | uint64(c[p+12])<<32 | uint64(c[p+13])<<24 | uint64(c[p+14])<<16 | uint64(c[p+15])<<8 | uint64(c[p+16])
+				l1 := uint64(c[p+1])<<56 | uint64(c[p+2])<<48 | uint64(c[p+3])<<40 | uint64(c[p+4])<<32 | uint64(c[p+5])<<24 | uint64(c[p+6])<<16 | uint64(c[p+7])<<8 | uint64(c[p+8])
+				l2 := uint64(c[p+0])
+				bc.pc = p + 17
+				s.data[s.top] = uint256.Int{l0, l1, l2, 0}
+				s.top++
+			}
+		case opcode.PUSH18:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+10])<<56 | uint64(c[p+11])<<48 | uint64(c[p+12])<<40 | uint64(c[p+13])<<32 | uint64(c[p+14])<<24 | uint64(c[p+15])<<16 | uint64(c[p+16])<<8 | uint64(c[p+17])
+				l1 := uint64(c[p+2])<<56 | uint64(c[p+3])<<48 | uint64(c[p+4])<<40 | uint64(c[p+5])<<32 | uint64(c[p+6])<<24 | uint64(c[p+7])<<16 | uint64(c[p+8])<<8 | uint64(c[p+9])
+				l2 := uint64(c[p+0])<<8 | uint64(c[p+1])
+				bc.pc = p + 18
+				s.data[s.top] = uint256.Int{l0, l1, l2, 0}
+				s.top++
+			}
+		case opcode.PUSH19:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+11])<<56 | uint64(c[p+12])<<48 | uint64(c[p+13])<<40 | uint64(c[p+14])<<32 | uint64(c[p+15])<<24 | uint64(c[p+16])<<16 | uint64(c[p+17])<<8 | uint64(c[p+18])
+				l1 := uint64(c[p+3])<<56 | uint64(c[p+4])<<48 | uint64(c[p+5])<<40 | uint64(c[p+6])<<32 | uint64(c[p+7])<<24 | uint64(c[p+8])<<16 | uint64(c[p+9])<<8 | uint64(c[p+10])
+				l2 := uint64(c[p+0])<<16 | uint64(c[p+1])<<8 | uint64(c[p+2])
+				bc.pc = p + 19
+				s.data[s.top] = uint256.Int{l0, l1, l2, 0}
+				s.top++
+			}
+		case opcode.PUSH21:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+13])<<56 | uint64(c[p+14])<<48 | uint64(c[p+15])<<40 | uint64(c[p+16])<<32 | uint64(c[p+17])<<24 | uint64(c[p+18])<<16 | uint64(c[p+19])<<8 | uint64(c[p+20])
+				l1 := uint64(c[p+5])<<56 | uint64(c[p+6])<<48 | uint64(c[p+7])<<40 | uint64(c[p+8])<<32 | uint64(c[p+9])<<24 | uint64(c[p+10])<<16 | uint64(c[p+11])<<8 | uint64(c[p+12])
+				l2 := uint64(c[p+0])<<32 | uint64(c[p+1])<<24 | uint64(c[p+2])<<16 | uint64(c[p+3])<<8 | uint64(c[p+4])
+				bc.pc = p + 21
+				s.data[s.top] = uint256.Int{l0, l1, l2, 0}
+				s.top++
+			}
+		case opcode.PUSH22:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+14])<<56 | uint64(c[p+15])<<48 | uint64(c[p+16])<<40 | uint64(c[p+17])<<32 | uint64(c[p+18])<<24 | uint64(c[p+19])<<16 | uint64(c[p+20])<<8 | uint64(c[p+21])
+				l1 := uint64(c[p+6])<<56 | uint64(c[p+7])<<48 | uint64(c[p+8])<<40 | uint64(c[p+9])<<32 | uint64(c[p+10])<<24 | uint64(c[p+11])<<16 | uint64(c[p+12])<<8 | uint64(c[p+13])
+				l2 := uint64(c[p+0])<<40 | uint64(c[p+1])<<32 | uint64(c[p+2])<<24 | uint64(c[p+3])<<16 | uint64(c[p+4])<<8 | uint64(c[p+5])
+				bc.pc = p + 22
+				s.data[s.top] = uint256.Int{l0, l1, l2, 0}
+				s.top++
+			}
+		case opcode.PUSH23:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+15])<<56 | uint64(c[p+16])<<48 | uint64(c[p+17])<<40 | uint64(c[p+18])<<32 | uint64(c[p+19])<<24 | uint64(c[p+20])<<16 | uint64(c[p+21])<<8 | uint64(c[p+22])
+				l1 := uint64(c[p+7])<<56 | uint64(c[p+8])<<48 | uint64(c[p+9])<<40 | uint64(c[p+10])<<32 | uint64(c[p+11])<<24 | uint64(c[p+12])<<16 | uint64(c[p+13])<<8 | uint64(c[p+14])
+				l2 := uint64(c[p+0])<<48 | uint64(c[p+1])<<40 | uint64(c[p+2])<<32 | uint64(c[p+3])<<24 | uint64(c[p+4])<<16 | uint64(c[p+5])<<8 | uint64(c[p+6])
+				bc.pc = p + 23
+				s.data[s.top] = uint256.Int{l0, l1, l2, 0}
+				s.top++
+			}
+		case opcode.PUSH24:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+16])<<56 | uint64(c[p+17])<<48 | uint64(c[p+18])<<40 | uint64(c[p+19])<<32 | uint64(c[p+20])<<24 | uint64(c[p+21])<<16 | uint64(c[p+22])<<8 | uint64(c[p+23])
+				l1 := uint64(c[p+8])<<56 | uint64(c[p+9])<<48 | uint64(c[p+10])<<40 | uint64(c[p+11])<<32 | uint64(c[p+12])<<24 | uint64(c[p+13])<<16 | uint64(c[p+14])<<8 | uint64(c[p+15])
+				l2 := uint64(c[p+0])<<56 | uint64(c[p+1])<<48 | uint64(c[p+2])<<40 | uint64(c[p+3])<<32 | uint64(c[p+4])<<24 | uint64(c[p+5])<<16 | uint64(c[p+6])<<8 | uint64(c[p+7])
+				bc.pc = p + 24
+				s.data[s.top] = uint256.Int{l0, l1, l2, 0}
+				s.top++
+			}
+		case opcode.PUSH25:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+17])<<56 | uint64(c[p+18])<<48 | uint64(c[p+19])<<40 | uint64(c[p+20])<<32 | uint64(c[p+21])<<24 | uint64(c[p+22])<<16 | uint64(c[p+23])<<8 | uint64(c[p+24])
+				l1 := uint64(c[p+9])<<56 | uint64(c[p+10])<<48 | uint64(c[p+11])<<40 | uint64(c[p+12])<<32 | uint64(c[p+13])<<24 | uint64(c[p+14])<<16 | uint64(c[p+15])<<8 | uint64(c[p+16])
+				l2 := uint64(c[p+1])<<56 | uint64(c[p+2])<<48 | uint64(c[p+3])<<40 | uint64(c[p+4])<<32 | uint64(c[p+5])<<24 | uint64(c[p+6])<<16 | uint64(c[p+7])<<8 | uint64(c[p+8])
+				l3 := uint64(c[p+0])
+				bc.pc = p + 25
+				s.data[s.top] = uint256.Int{l0, l1, l2, l3}
+				s.top++
+			}
+		case opcode.PUSH26:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+18])<<56 | uint64(c[p+19])<<48 | uint64(c[p+20])<<40 | uint64(c[p+21])<<32 | uint64(c[p+22])<<24 | uint64(c[p+23])<<16 | uint64(c[p+24])<<8 | uint64(c[p+25])
+				l1 := uint64(c[p+10])<<56 | uint64(c[p+11])<<48 | uint64(c[p+12])<<40 | uint64(c[p+13])<<32 | uint64(c[p+14])<<24 | uint64(c[p+15])<<16 | uint64(c[p+16])<<8 | uint64(c[p+17])
+				l2 := uint64(c[p+2])<<56 | uint64(c[p+3])<<48 | uint64(c[p+4])<<40 | uint64(c[p+5])<<32 | uint64(c[p+6])<<24 | uint64(c[p+7])<<16 | uint64(c[p+8])<<8 | uint64(c[p+9])
+				l3 := uint64(c[p+0])<<8 | uint64(c[p+1])
+				bc.pc = p + 26
+				s.data[s.top] = uint256.Int{l0, l1, l2, l3}
+				s.top++
+			}
+		case opcode.PUSH27:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+19])<<56 | uint64(c[p+20])<<48 | uint64(c[p+21])<<40 | uint64(c[p+22])<<32 | uint64(c[p+23])<<24 | uint64(c[p+24])<<16 | uint64(c[p+25])<<8 | uint64(c[p+26])
+				l1 := uint64(c[p+11])<<56 | uint64(c[p+12])<<48 | uint64(c[p+13])<<40 | uint64(c[p+14])<<32 | uint64(c[p+15])<<24 | uint64(c[p+16])<<16 | uint64(c[p+17])<<8 | uint64(c[p+18])
+				l2 := uint64(c[p+3])<<56 | uint64(c[p+4])<<48 | uint64(c[p+5])<<40 | uint64(c[p+6])<<32 | uint64(c[p+7])<<24 | uint64(c[p+8])<<16 | uint64(c[p+9])<<8 | uint64(c[p+10])
+				l3 := uint64(c[p+0])<<16 | uint64(c[p+1])<<8 | uint64(c[p+2])
+				bc.pc = p + 27
+				s.data[s.top] = uint256.Int{l0, l1, l2, l3}
+				s.top++
+			}
+		case opcode.PUSH28:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+20])<<56 | uint64(c[p+21])<<48 | uint64(c[p+22])<<40 | uint64(c[p+23])<<32 | uint64(c[p+24])<<24 | uint64(c[p+25])<<16 | uint64(c[p+26])<<8 | uint64(c[p+27])
+				l1 := uint64(c[p+12])<<56 | uint64(c[p+13])<<48 | uint64(c[p+14])<<40 | uint64(c[p+15])<<32 | uint64(c[p+16])<<24 | uint64(c[p+17])<<16 | uint64(c[p+18])<<8 | uint64(c[p+19])
+				l2 := uint64(c[p+4])<<56 | uint64(c[p+5])<<48 | uint64(c[p+6])<<40 | uint64(c[p+7])<<32 | uint64(c[p+8])<<24 | uint64(c[p+9])<<16 | uint64(c[p+10])<<8 | uint64(c[p+11])
+				l3 := uint64(c[p+0])<<24 | uint64(c[p+1])<<16 | uint64(c[p+2])<<8 | uint64(c[p+3])
+				bc.pc = p + 28
+				s.data[s.top] = uint256.Int{l0, l1, l2, l3}
+				s.top++
+			}
+		case opcode.PUSH29:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+21])<<56 | uint64(c[p+22])<<48 | uint64(c[p+23])<<40 | uint64(c[p+24])<<32 | uint64(c[p+25])<<24 | uint64(c[p+26])<<16 | uint64(c[p+27])<<8 | uint64(c[p+28])
+				l1 := uint64(c[p+13])<<56 | uint64(c[p+14])<<48 | uint64(c[p+15])<<40 | uint64(c[p+16])<<32 | uint64(c[p+17])<<24 | uint64(c[p+18])<<16 | uint64(c[p+19])<<8 | uint64(c[p+20])
+				l2 := uint64(c[p+5])<<56 | uint64(c[p+6])<<48 | uint64(c[p+7])<<40 | uint64(c[p+8])<<32 | uint64(c[p+9])<<24 | uint64(c[p+10])<<16 | uint64(c[p+11])<<8 | uint64(c[p+12])
+				l3 := uint64(c[p+0])<<32 | uint64(c[p+1])<<24 | uint64(c[p+2])<<16 | uint64(c[p+3])<<8 | uint64(c[p+4])
+				bc.pc = p + 29
+				s.data[s.top] = uint256.Int{l0, l1, l2, l3}
+				s.top++
+			}
+		case opcode.PUSH30:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+22])<<56 | uint64(c[p+23])<<48 | uint64(c[p+24])<<40 | uint64(c[p+25])<<32 | uint64(c[p+26])<<24 | uint64(c[p+27])<<16 | uint64(c[p+28])<<8 | uint64(c[p+29])
+				l1 := uint64(c[p+14])<<56 | uint64(c[p+15])<<48 | uint64(c[p+16])<<40 | uint64(c[p+17])<<32 | uint64(c[p+18])<<24 | uint64(c[p+19])<<16 | uint64(c[p+20])<<8 | uint64(c[p+21])
+				l2 := uint64(c[p+6])<<56 | uint64(c[p+7])<<48 | uint64(c[p+8])<<40 | uint64(c[p+9])<<32 | uint64(c[p+10])<<24 | uint64(c[p+11])<<16 | uint64(c[p+12])<<8 | uint64(c[p+13])
+				l3 := uint64(c[p+0])<<40 | uint64(c[p+1])<<32 | uint64(c[p+2])<<24 | uint64(c[p+3])<<16 | uint64(c[p+4])<<8 | uint64(c[p+5])
+				bc.pc = p + 30
+				s.data[s.top] = uint256.Int{l0, l1, l2, l3}
+				s.top++
+			}
+		case opcode.PUSH31:
+			gasCounter += spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				if gas.remaining < gasCounter {
+					interp.HaltOOG()
+					return
+				}
+				gas.remaining -= gasCounter
+				gasCounter = 0
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+23])<<56 | uint64(c[p+24])<<48 | uint64(c[p+25])<<40 | uint64(c[p+26])<<32 | uint64(c[p+27])<<24 | uint64(c[p+28])<<16 | uint64(c[p+29])<<8 | uint64(c[p+30])
+				l1 := uint64(c[p+15])<<56 | uint64(c[p+16])<<48 | uint64(c[p+17])<<40 | uint64(c[p+18])<<32 | uint64(c[p+19])<<24 | uint64(c[p+20])<<16 | uint64(c[p+21])<<8 | uint64(c[p+22])
+				l2 := uint64(c[p+7])<<56 | uint64(c[p+8])<<48 | uint64(c[p+9])<<40 | uint64(c[p+10])<<32 | uint64(c[p+11])<<24 | uint64(c[p+12])<<16 | uint64(c[p+13])<<8 | uint64(c[p+14])
+				l3 := uint64(c[p+0])<<48 | uint64(c[p+1])<<40 | uint64(c[p+2])<<32 | uint64(c[p+3])<<24 | uint64(c[p+4])<<16 | uint64(c[p+5])<<8 | uint64(c[p+6])
+				bc.pc = p + 31
+				s.data[s.top] = uint256.Int{l0, l1, l2, l3}
 				s.top++
 			}
 		case opcode.DUP1:
@@ -3585,7 +4105,7 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 				s.top++
 
 			}
-		case opcode.PUSH5, opcode.PUSH6, opcode.PUSH7, opcode.PUSH8, opcode.PUSH9, opcode.PUSH10, opcode.PUSH11, opcode.PUSH12, opcode.PUSH13, opcode.PUSH14, opcode.PUSH15, opcode.PUSH16, opcode.PUSH17, opcode.PUSH18, opcode.PUSH19, opcode.PUSH21, opcode.PUSH22, opcode.PUSH23, opcode.PUSH24, opcode.PUSH25, opcode.PUSH26, opcode.PUSH27, opcode.PUSH28, opcode.PUSH29, opcode.PUSH30, opcode.PUSH31:
+		case opcode.PUSH5:
 			if gas.remaining < spec.GasVerylow {
 				interp.HaltOOG()
 				return
@@ -3595,9 +4115,479 @@ func (r *TracingRunner) Run(interp *Interpreter, host Host) {
 			if s.top >= StackLimit {
 				interp.HaltOverflow()
 			} else {
-				n := int(op - opcode.PUSH0)
-				s.data[s.top] = *new(uint256.Int).SetBytes(bc.code[bc.pc : bc.pc+n])
-				bc.pc += n
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+0])<<32 | uint64(c[p+1])<<24 | uint64(c[p+2])<<16 | uint64(c[p+3])<<8 | uint64(c[p+4])
+				bc.pc = p + 5
+				s.data[s.top] = uint256.Int{l0, 0, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH6:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+0])<<40 | uint64(c[p+1])<<32 | uint64(c[p+2])<<24 | uint64(c[p+3])<<16 | uint64(c[p+4])<<8 | uint64(c[p+5])
+				bc.pc = p + 6
+				s.data[s.top] = uint256.Int{l0, 0, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH7:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+0])<<48 | uint64(c[p+1])<<40 | uint64(c[p+2])<<32 | uint64(c[p+3])<<24 | uint64(c[p+4])<<16 | uint64(c[p+5])<<8 | uint64(c[p+6])
+				bc.pc = p + 7
+				s.data[s.top] = uint256.Int{l0, 0, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH8:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+0])<<56 | uint64(c[p+1])<<48 | uint64(c[p+2])<<40 | uint64(c[p+3])<<32 | uint64(c[p+4])<<24 | uint64(c[p+5])<<16 | uint64(c[p+6])<<8 | uint64(c[p+7])
+				bc.pc = p + 8
+				s.data[s.top] = uint256.Int{l0, 0, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH9:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+1])<<56 | uint64(c[p+2])<<48 | uint64(c[p+3])<<40 | uint64(c[p+4])<<32 | uint64(c[p+5])<<24 | uint64(c[p+6])<<16 | uint64(c[p+7])<<8 | uint64(c[p+8])
+				l1 := uint64(c[p+0])
+				bc.pc = p + 9
+				s.data[s.top] = uint256.Int{l0, l1, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH10:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+2])<<56 | uint64(c[p+3])<<48 | uint64(c[p+4])<<40 | uint64(c[p+5])<<32 | uint64(c[p+6])<<24 | uint64(c[p+7])<<16 | uint64(c[p+8])<<8 | uint64(c[p+9])
+				l1 := uint64(c[p+0])<<8 | uint64(c[p+1])
+				bc.pc = p + 10
+				s.data[s.top] = uint256.Int{l0, l1, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH11:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+3])<<56 | uint64(c[p+4])<<48 | uint64(c[p+5])<<40 | uint64(c[p+6])<<32 | uint64(c[p+7])<<24 | uint64(c[p+8])<<16 | uint64(c[p+9])<<8 | uint64(c[p+10])
+				l1 := uint64(c[p+0])<<16 | uint64(c[p+1])<<8 | uint64(c[p+2])
+				bc.pc = p + 11
+				s.data[s.top] = uint256.Int{l0, l1, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH12:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+4])<<56 | uint64(c[p+5])<<48 | uint64(c[p+6])<<40 | uint64(c[p+7])<<32 | uint64(c[p+8])<<24 | uint64(c[p+9])<<16 | uint64(c[p+10])<<8 | uint64(c[p+11])
+				l1 := uint64(c[p+0])<<24 | uint64(c[p+1])<<16 | uint64(c[p+2])<<8 | uint64(c[p+3])
+				bc.pc = p + 12
+				s.data[s.top] = uint256.Int{l0, l1, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH13:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+5])<<56 | uint64(c[p+6])<<48 | uint64(c[p+7])<<40 | uint64(c[p+8])<<32 | uint64(c[p+9])<<24 | uint64(c[p+10])<<16 | uint64(c[p+11])<<8 | uint64(c[p+12])
+				l1 := uint64(c[p+0])<<32 | uint64(c[p+1])<<24 | uint64(c[p+2])<<16 | uint64(c[p+3])<<8 | uint64(c[p+4])
+				bc.pc = p + 13
+				s.data[s.top] = uint256.Int{l0, l1, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH14:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+6])<<56 | uint64(c[p+7])<<48 | uint64(c[p+8])<<40 | uint64(c[p+9])<<32 | uint64(c[p+10])<<24 | uint64(c[p+11])<<16 | uint64(c[p+12])<<8 | uint64(c[p+13])
+				l1 := uint64(c[p+0])<<40 | uint64(c[p+1])<<32 | uint64(c[p+2])<<24 | uint64(c[p+3])<<16 | uint64(c[p+4])<<8 | uint64(c[p+5])
+				bc.pc = p + 14
+				s.data[s.top] = uint256.Int{l0, l1, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH15:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+7])<<56 | uint64(c[p+8])<<48 | uint64(c[p+9])<<40 | uint64(c[p+10])<<32 | uint64(c[p+11])<<24 | uint64(c[p+12])<<16 | uint64(c[p+13])<<8 | uint64(c[p+14])
+				l1 := uint64(c[p+0])<<48 | uint64(c[p+1])<<40 | uint64(c[p+2])<<32 | uint64(c[p+3])<<24 | uint64(c[p+4])<<16 | uint64(c[p+5])<<8 | uint64(c[p+6])
+				bc.pc = p + 15
+				s.data[s.top] = uint256.Int{l0, l1, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH16:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+8])<<56 | uint64(c[p+9])<<48 | uint64(c[p+10])<<40 | uint64(c[p+11])<<32 | uint64(c[p+12])<<24 | uint64(c[p+13])<<16 | uint64(c[p+14])<<8 | uint64(c[p+15])
+				l1 := uint64(c[p+0])<<56 | uint64(c[p+1])<<48 | uint64(c[p+2])<<40 | uint64(c[p+3])<<32 | uint64(c[p+4])<<24 | uint64(c[p+5])<<16 | uint64(c[p+6])<<8 | uint64(c[p+7])
+				bc.pc = p + 16
+				s.data[s.top] = uint256.Int{l0, l1, 0, 0}
+				s.top++
+			}
+		case opcode.PUSH17:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+9])<<56 | uint64(c[p+10])<<48 | uint64(c[p+11])<<40 | uint64(c[p+12])<<32 | uint64(c[p+13])<<24 | uint64(c[p+14])<<16 | uint64(c[p+15])<<8 | uint64(c[p+16])
+				l1 := uint64(c[p+1])<<56 | uint64(c[p+2])<<48 | uint64(c[p+3])<<40 | uint64(c[p+4])<<32 | uint64(c[p+5])<<24 | uint64(c[p+6])<<16 | uint64(c[p+7])<<8 | uint64(c[p+8])
+				l2 := uint64(c[p+0])
+				bc.pc = p + 17
+				s.data[s.top] = uint256.Int{l0, l1, l2, 0}
+				s.top++
+			}
+		case opcode.PUSH18:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+10])<<56 | uint64(c[p+11])<<48 | uint64(c[p+12])<<40 | uint64(c[p+13])<<32 | uint64(c[p+14])<<24 | uint64(c[p+15])<<16 | uint64(c[p+16])<<8 | uint64(c[p+17])
+				l1 := uint64(c[p+2])<<56 | uint64(c[p+3])<<48 | uint64(c[p+4])<<40 | uint64(c[p+5])<<32 | uint64(c[p+6])<<24 | uint64(c[p+7])<<16 | uint64(c[p+8])<<8 | uint64(c[p+9])
+				l2 := uint64(c[p+0])<<8 | uint64(c[p+1])
+				bc.pc = p + 18
+				s.data[s.top] = uint256.Int{l0, l1, l2, 0}
+				s.top++
+			}
+		case opcode.PUSH19:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+11])<<56 | uint64(c[p+12])<<48 | uint64(c[p+13])<<40 | uint64(c[p+14])<<32 | uint64(c[p+15])<<24 | uint64(c[p+16])<<16 | uint64(c[p+17])<<8 | uint64(c[p+18])
+				l1 := uint64(c[p+3])<<56 | uint64(c[p+4])<<48 | uint64(c[p+5])<<40 | uint64(c[p+6])<<32 | uint64(c[p+7])<<24 | uint64(c[p+8])<<16 | uint64(c[p+9])<<8 | uint64(c[p+10])
+				l2 := uint64(c[p+0])<<16 | uint64(c[p+1])<<8 | uint64(c[p+2])
+				bc.pc = p + 19
+				s.data[s.top] = uint256.Int{l0, l1, l2, 0}
+				s.top++
+			}
+		case opcode.PUSH21:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+13])<<56 | uint64(c[p+14])<<48 | uint64(c[p+15])<<40 | uint64(c[p+16])<<32 | uint64(c[p+17])<<24 | uint64(c[p+18])<<16 | uint64(c[p+19])<<8 | uint64(c[p+20])
+				l1 := uint64(c[p+5])<<56 | uint64(c[p+6])<<48 | uint64(c[p+7])<<40 | uint64(c[p+8])<<32 | uint64(c[p+9])<<24 | uint64(c[p+10])<<16 | uint64(c[p+11])<<8 | uint64(c[p+12])
+				l2 := uint64(c[p+0])<<32 | uint64(c[p+1])<<24 | uint64(c[p+2])<<16 | uint64(c[p+3])<<8 | uint64(c[p+4])
+				bc.pc = p + 21
+				s.data[s.top] = uint256.Int{l0, l1, l2, 0}
+				s.top++
+			}
+		case opcode.PUSH22:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+14])<<56 | uint64(c[p+15])<<48 | uint64(c[p+16])<<40 | uint64(c[p+17])<<32 | uint64(c[p+18])<<24 | uint64(c[p+19])<<16 | uint64(c[p+20])<<8 | uint64(c[p+21])
+				l1 := uint64(c[p+6])<<56 | uint64(c[p+7])<<48 | uint64(c[p+8])<<40 | uint64(c[p+9])<<32 | uint64(c[p+10])<<24 | uint64(c[p+11])<<16 | uint64(c[p+12])<<8 | uint64(c[p+13])
+				l2 := uint64(c[p+0])<<40 | uint64(c[p+1])<<32 | uint64(c[p+2])<<24 | uint64(c[p+3])<<16 | uint64(c[p+4])<<8 | uint64(c[p+5])
+				bc.pc = p + 22
+				s.data[s.top] = uint256.Int{l0, l1, l2, 0}
+				s.top++
+			}
+		case opcode.PUSH23:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+15])<<56 | uint64(c[p+16])<<48 | uint64(c[p+17])<<40 | uint64(c[p+18])<<32 | uint64(c[p+19])<<24 | uint64(c[p+20])<<16 | uint64(c[p+21])<<8 | uint64(c[p+22])
+				l1 := uint64(c[p+7])<<56 | uint64(c[p+8])<<48 | uint64(c[p+9])<<40 | uint64(c[p+10])<<32 | uint64(c[p+11])<<24 | uint64(c[p+12])<<16 | uint64(c[p+13])<<8 | uint64(c[p+14])
+				l2 := uint64(c[p+0])<<48 | uint64(c[p+1])<<40 | uint64(c[p+2])<<32 | uint64(c[p+3])<<24 | uint64(c[p+4])<<16 | uint64(c[p+5])<<8 | uint64(c[p+6])
+				bc.pc = p + 23
+				s.data[s.top] = uint256.Int{l0, l1, l2, 0}
+				s.top++
+			}
+		case opcode.PUSH24:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+16])<<56 | uint64(c[p+17])<<48 | uint64(c[p+18])<<40 | uint64(c[p+19])<<32 | uint64(c[p+20])<<24 | uint64(c[p+21])<<16 | uint64(c[p+22])<<8 | uint64(c[p+23])
+				l1 := uint64(c[p+8])<<56 | uint64(c[p+9])<<48 | uint64(c[p+10])<<40 | uint64(c[p+11])<<32 | uint64(c[p+12])<<24 | uint64(c[p+13])<<16 | uint64(c[p+14])<<8 | uint64(c[p+15])
+				l2 := uint64(c[p+0])<<56 | uint64(c[p+1])<<48 | uint64(c[p+2])<<40 | uint64(c[p+3])<<32 | uint64(c[p+4])<<24 | uint64(c[p+5])<<16 | uint64(c[p+6])<<8 | uint64(c[p+7])
+				bc.pc = p + 24
+				s.data[s.top] = uint256.Int{l0, l1, l2, 0}
+				s.top++
+			}
+		case opcode.PUSH25:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+17])<<56 | uint64(c[p+18])<<48 | uint64(c[p+19])<<40 | uint64(c[p+20])<<32 | uint64(c[p+21])<<24 | uint64(c[p+22])<<16 | uint64(c[p+23])<<8 | uint64(c[p+24])
+				l1 := uint64(c[p+9])<<56 | uint64(c[p+10])<<48 | uint64(c[p+11])<<40 | uint64(c[p+12])<<32 | uint64(c[p+13])<<24 | uint64(c[p+14])<<16 | uint64(c[p+15])<<8 | uint64(c[p+16])
+				l2 := uint64(c[p+1])<<56 | uint64(c[p+2])<<48 | uint64(c[p+3])<<40 | uint64(c[p+4])<<32 | uint64(c[p+5])<<24 | uint64(c[p+6])<<16 | uint64(c[p+7])<<8 | uint64(c[p+8])
+				l3 := uint64(c[p+0])
+				bc.pc = p + 25
+				s.data[s.top] = uint256.Int{l0, l1, l2, l3}
+				s.top++
+			}
+		case opcode.PUSH26:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+18])<<56 | uint64(c[p+19])<<48 | uint64(c[p+20])<<40 | uint64(c[p+21])<<32 | uint64(c[p+22])<<24 | uint64(c[p+23])<<16 | uint64(c[p+24])<<8 | uint64(c[p+25])
+				l1 := uint64(c[p+10])<<56 | uint64(c[p+11])<<48 | uint64(c[p+12])<<40 | uint64(c[p+13])<<32 | uint64(c[p+14])<<24 | uint64(c[p+15])<<16 | uint64(c[p+16])<<8 | uint64(c[p+17])
+				l2 := uint64(c[p+2])<<56 | uint64(c[p+3])<<48 | uint64(c[p+4])<<40 | uint64(c[p+5])<<32 | uint64(c[p+6])<<24 | uint64(c[p+7])<<16 | uint64(c[p+8])<<8 | uint64(c[p+9])
+				l3 := uint64(c[p+0])<<8 | uint64(c[p+1])
+				bc.pc = p + 26
+				s.data[s.top] = uint256.Int{l0, l1, l2, l3}
+				s.top++
+			}
+		case opcode.PUSH27:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+19])<<56 | uint64(c[p+20])<<48 | uint64(c[p+21])<<40 | uint64(c[p+22])<<32 | uint64(c[p+23])<<24 | uint64(c[p+24])<<16 | uint64(c[p+25])<<8 | uint64(c[p+26])
+				l1 := uint64(c[p+11])<<56 | uint64(c[p+12])<<48 | uint64(c[p+13])<<40 | uint64(c[p+14])<<32 | uint64(c[p+15])<<24 | uint64(c[p+16])<<16 | uint64(c[p+17])<<8 | uint64(c[p+18])
+				l2 := uint64(c[p+3])<<56 | uint64(c[p+4])<<48 | uint64(c[p+5])<<40 | uint64(c[p+6])<<32 | uint64(c[p+7])<<24 | uint64(c[p+8])<<16 | uint64(c[p+9])<<8 | uint64(c[p+10])
+				l3 := uint64(c[p+0])<<16 | uint64(c[p+1])<<8 | uint64(c[p+2])
+				bc.pc = p + 27
+				s.data[s.top] = uint256.Int{l0, l1, l2, l3}
+				s.top++
+			}
+		case opcode.PUSH28:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+20])<<56 | uint64(c[p+21])<<48 | uint64(c[p+22])<<40 | uint64(c[p+23])<<32 | uint64(c[p+24])<<24 | uint64(c[p+25])<<16 | uint64(c[p+26])<<8 | uint64(c[p+27])
+				l1 := uint64(c[p+12])<<56 | uint64(c[p+13])<<48 | uint64(c[p+14])<<40 | uint64(c[p+15])<<32 | uint64(c[p+16])<<24 | uint64(c[p+17])<<16 | uint64(c[p+18])<<8 | uint64(c[p+19])
+				l2 := uint64(c[p+4])<<56 | uint64(c[p+5])<<48 | uint64(c[p+6])<<40 | uint64(c[p+7])<<32 | uint64(c[p+8])<<24 | uint64(c[p+9])<<16 | uint64(c[p+10])<<8 | uint64(c[p+11])
+				l3 := uint64(c[p+0])<<24 | uint64(c[p+1])<<16 | uint64(c[p+2])<<8 | uint64(c[p+3])
+				bc.pc = p + 28
+				s.data[s.top] = uint256.Int{l0, l1, l2, l3}
+				s.top++
+			}
+		case opcode.PUSH29:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+21])<<56 | uint64(c[p+22])<<48 | uint64(c[p+23])<<40 | uint64(c[p+24])<<32 | uint64(c[p+25])<<24 | uint64(c[p+26])<<16 | uint64(c[p+27])<<8 | uint64(c[p+28])
+				l1 := uint64(c[p+13])<<56 | uint64(c[p+14])<<48 | uint64(c[p+15])<<40 | uint64(c[p+16])<<32 | uint64(c[p+17])<<24 | uint64(c[p+18])<<16 | uint64(c[p+19])<<8 | uint64(c[p+20])
+				l2 := uint64(c[p+5])<<56 | uint64(c[p+6])<<48 | uint64(c[p+7])<<40 | uint64(c[p+8])<<32 | uint64(c[p+9])<<24 | uint64(c[p+10])<<16 | uint64(c[p+11])<<8 | uint64(c[p+12])
+				l3 := uint64(c[p+0])<<32 | uint64(c[p+1])<<24 | uint64(c[p+2])<<16 | uint64(c[p+3])<<8 | uint64(c[p+4])
+				bc.pc = p + 29
+				s.data[s.top] = uint256.Int{l0, l1, l2, l3}
+				s.top++
+			}
+		case opcode.PUSH30:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+22])<<56 | uint64(c[p+23])<<48 | uint64(c[p+24])<<40 | uint64(c[p+25])<<32 | uint64(c[p+26])<<24 | uint64(c[p+27])<<16 | uint64(c[p+28])<<8 | uint64(c[p+29])
+				l1 := uint64(c[p+14])<<56 | uint64(c[p+15])<<48 | uint64(c[p+16])<<40 | uint64(c[p+17])<<32 | uint64(c[p+18])<<24 | uint64(c[p+19])<<16 | uint64(c[p+20])<<8 | uint64(c[p+21])
+				l2 := uint64(c[p+6])<<56 | uint64(c[p+7])<<48 | uint64(c[p+8])<<40 | uint64(c[p+9])<<32 | uint64(c[p+10])<<24 | uint64(c[p+11])<<16 | uint64(c[p+12])<<8 | uint64(c[p+13])
+				l3 := uint64(c[p+0])<<40 | uint64(c[p+1])<<32 | uint64(c[p+2])<<24 | uint64(c[p+3])<<16 | uint64(c[p+4])<<8 | uint64(c[p+5])
+				bc.pc = p + 30
+				s.data[s.top] = uint256.Int{l0, l1, l2, l3}
+				s.top++
+			}
+		case opcode.PUSH31:
+			if gas.remaining < spec.GasVerylow {
+				interp.HaltOOG()
+				return
+			}
+			gas.remaining -= spec.GasVerylow
+			s := interp.Stack
+			if s.top >= StackLimit {
+				interp.HaltOverflow()
+			} else {
+				c := bc.code
+				p := bc.pc
+				l0 := uint64(c[p+23])<<56 | uint64(c[p+24])<<48 | uint64(c[p+25])<<40 | uint64(c[p+26])<<32 | uint64(c[p+27])<<24 | uint64(c[p+28])<<16 | uint64(c[p+29])<<8 | uint64(c[p+30])
+				l1 := uint64(c[p+15])<<56 | uint64(c[p+16])<<48 | uint64(c[p+17])<<40 | uint64(c[p+18])<<32 | uint64(c[p+19])<<24 | uint64(c[p+20])<<16 | uint64(c[p+21])<<8 | uint64(c[p+22])
+				l2 := uint64(c[p+7])<<56 | uint64(c[p+8])<<48 | uint64(c[p+9])<<40 | uint64(c[p+10])<<32 | uint64(c[p+11])<<24 | uint64(c[p+12])<<16 | uint64(c[p+13])<<8 | uint64(c[p+14])
+				l3 := uint64(c[p+0])<<48 | uint64(c[p+1])<<40 | uint64(c[p+2])<<32 | uint64(c[p+3])<<24 | uint64(c[p+4])<<16 | uint64(c[p+5])<<8 | uint64(c[p+6])
+				bc.pc = p + 31
+				s.data[s.top] = uint256.Int{l0, l1, l2, l3}
 				s.top++
 			}
 		case opcode.DUP1:
