@@ -10,13 +10,9 @@ type Runner interface {
 	Run(interp *Interpreter, host Host)
 }
 
-// DefaultRunner is the fast path with basic-block gas and stack checks.
+// DefaultRunner is the fast-path runner with gas accumulator and zero tracing overhead.
 // Its Run method is generated in table_gen.go.
 type DefaultRunner struct{}
-
-// PlainRunner is the simple RPC/debug runner with per-opcode gas and stack checks.
-// Its Run method is generated in table_gen.go.
-type PlainRunner struct{}
 
 // TracingRunner executes with per-opcode gas deduction and tracing hooks.
 // Its Run method is generated in table_gen.go.

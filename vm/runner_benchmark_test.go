@@ -28,9 +28,6 @@ func benchmarkRunnerModes(b *testing.B, code []byte) {
 	b.Run("Default", func(b *testing.B) {
 		benchmarkRunner(b, DefaultRunner{}, code)
 	})
-	b.Run("Plain", func(b *testing.B) {
-		benchmarkRunner(b, PlainRunner{}, code)
-	})
 	b.Run("TracingNoOpcodeHook", func(b *testing.B) {
 		hooks := &Hooks{OnExit: func(int, []byte, uint64, error, bool) {}}
 		benchmarkRunner(b, NewTracingRunner(hooks, spec.Prague), code)

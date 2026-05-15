@@ -2,7 +2,6 @@ package vm
 
 import (
 	"encoding/binary"
-	"math"
 
 	"github.com/Giulio2002/gevm/types"
 )
@@ -25,37 +24,8 @@ type Bytecode struct {
 	jumpTableReady bool
 	// Whether the jump table was set externally (must not be mutated by ensureJumpTable).
 	jumpTableExternal bool
-	// Basic block metadata for the optimized interpreter.
-	basicBlocks []BasicBlockInfo
-	blockStarts []uint16
-	blocksReady bool
 	// The hash of the bytecode, lazily computed.
 	hash *types.B256
-}
-
-// BasicBlockInfo holds precomputed static requirements for a straight-line
-// bytecode block. Fork-varying gas is stored as small counters.
-type BasicBlockInfo struct {
-	ConstGas        uint64
-	EndPC           int32
-	StackRequired   int16
-	StackMaxGrowth  int16
-	BalanceOps      uint16
-	ExtCodeSizeOps  uint16
-	ExtCodeHashOps  uint16
-	SloadOps        uint16
-	CallOps         uint16
-	SelfdestructOps uint16
-}
-
-func (b *BasicBlockInfo) baseGas(fg ForkGas) uint64 {
-	return b.ConstGas +
-		uint64(b.BalanceOps)*fg.Balance +
-		uint64(b.ExtCodeSizeOps)*fg.ExtCodeSize +
-		uint64(b.ExtCodeHashOps)*fg.ExtCodeHash +
-		uint64(b.SloadOps)*fg.Sload +
-		uint64(b.CallOps)*fg.Call +
-		uint64(b.SelfdestructOps)*fg.Selfdestruct
 }
 
 // bytecodeEndPadding is the number of zero bytes appended after bytecode.
@@ -85,7 +55,6 @@ func NewBytecode(code []byte) *Bytecode {
 		running:     true,
 	}
 	bc.ensureJumpTable()
-	bc.ensureBasicBlocks()
 	return bc
 }
 
@@ -107,7 +76,6 @@ func (b *Bytecode) ResetWithHash(code []byte, hash types.B256) {
 		b.pc = 0
 		b.running = true
 		// jumpTable + jumpTableReady still valid from previous Reset
-		// basicBlocks + blockStarts still valid from previous Reset
 		return
 	}
 
@@ -135,7 +103,6 @@ func (b *Bytecode) Reset(code []byte) {
 	b.running = true
 	b.hash = nil
 	b.jumpTableReady = false // defer analysis until first IsValidJump
-	b.blocksReady = false
 }
 
 // SetJumpTable sets an externally-provided jump table, skipping analysis.
@@ -156,101 +123,6 @@ func (b *Bytecode) GetJumpTable() []byte {
 	b.ensureJumpTable()
 	b.jumpTableExternal = true
 	return b.jumpTable
-}
-
-func (b *Bytecode) BasicBlockAt(pc int) *BasicBlockInfo {
-	b.ensureBasicBlocks()
-	if pc < 0 || pc >= len(b.blockStarts) {
-		return nil
-	}
-	idx := b.blockStarts[pc]
-	if idx == 0 {
-		return nil
-	}
-	return &b.basicBlocks[idx-1]
-}
-
-func (b *Bytecode) ensureBasicBlocks() {
-	if b.blocksReady {
-		return
-	}
-	b.blocksReady = true
-	if b.originalLen == 0 {
-		b.basicBlocks = b.basicBlocks[:0]
-		if cap(b.blockStarts) > 0 {
-			b.blockStarts = b.blockStarts[:0]
-		}
-		return
-	}
-	if cap(b.blockStarts) >= b.originalLen {
-		b.blockStarts = b.blockStarts[:b.originalLen]
-		clear(b.blockStarts)
-	} else {
-		b.blockStarts = make([]uint16, b.originalLen)
-	}
-	b.basicBlocks = b.basicBlocks[:0]
-	for pc := 0; pc < b.originalLen; {
-		start := pc
-		block := BasicBlockInfo{}
-		var stackChange int16
-		for pc < b.originalLen {
-			op := b.code[pc]
-			info := blockInstructionInfo(op)
-			if pc != start && info.startsBlock {
-				break
-			}
-			block.addGas(info)
-			required := info.stackRequired - stackChange
-			if required > block.StackRequired {
-				block.StackRequired = required
-			}
-			stackChange += info.stackChange
-			if stackChange > block.StackMaxGrowth {
-				block.StackMaxGrowth = stackChange
-			}
-			pc += instructionLen(op)
-			if info.endsBlock {
-				break
-			}
-		}
-		if len(b.basicBlocks) == math.MaxUint16 {
-			// Extremely fragmented bytecode should still execute correctly.
-			// Stop indexing further blocks; the optimized runner falls back to
-			// per-op checks for unindexed PCs only when it cannot find metadata.
-			return
-		}
-		b.basicBlocks = append(b.basicBlocks, block)
-		b.basicBlocks[len(b.basicBlocks)-1].EndPC = int32(pc)
-		b.blockStarts[start] = uint16(len(b.basicBlocks))
-		if pc == start {
-			pc++
-		}
-	}
-}
-
-func (b *BasicBlockInfo) addGas(info blockOpcodeInfo) {
-	b.ConstGas += info.constGas
-	switch info.forkGas {
-	case blockGasBalance:
-		b.BalanceOps++
-	case blockGasExtCodeSize:
-		b.ExtCodeSizeOps++
-	case blockGasExtCodeHash:
-		b.ExtCodeHashOps++
-	case blockGasSload:
-		b.SloadOps++
-	case blockGasCall:
-		b.CallOps++
-	case blockGasSelfdestruct:
-		b.SelfdestructOps++
-	}
-}
-
-func instructionLen(op byte) int {
-	if op >= 0x60 && op <= 0x7f {
-		return int(op-0x5f) + 1
-	}
-	return 1
 }
 
 // ensureJumpTable builds the jump table if not yet built for the current code.

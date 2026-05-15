@@ -260,10 +260,9 @@ func substituteLocals(body string) string {
 // ---------------------------------------------------------------------------
 
 type emitter struct {
-	buf          *bytes.Buffer
-	bodies       map[string]string
-	immediateGas bool // true → per-opcode gas deduction; false → optimized block charging
-	optimized    bool
+	buf     *bytes.Buffer
+	bodies  map[string]string
+	tracing bool // true → per-opcode gas deduction, hooks; false → gas accumulator
 }
 
 func (e *emitter) p(format string, args ...interface{}) {
@@ -272,12 +271,9 @@ func (e *emitter) p(format string, args ...interface{}) {
 
 // emitGas emits gas charging for a single opcode.
 // In accumulator mode: gasCounter += expr.
-// In immediate mode: immediate check + deduction from gas.remaining.
+// In tracing mode: immediate check + deduction from gas.remaining.
 func (e *emitter) emitGas(gasExpr string) {
-	if e.optimized {
-		return
-	}
-	if e.immediateGas {
+	if e.tracing {
 		e.p("if gas.remaining < %s {\n", gasExpr)
 		e.p("interp.HaltOOG()\n")
 		e.p("return\n")
@@ -289,9 +285,9 @@ func (e *emitter) emitGas(gasExpr string) {
 }
 
 // emitFlush emits the gasCounter flush check + deduction.
-// No-op in immediate/optimized mode.
+// No-op in tracing mode (gas is deducted per-opcode).
 func (e *emitter) emitFlush() {
-	if e.immediateGas || e.optimized {
+	if e.tracing {
 		return
 	}
 	e.p("if gas.remaining < gasCounter {\n")
@@ -303,9 +299,9 @@ func (e *emitter) emitFlush() {
 }
 
 // emitFlushOnError emits flush-on-error inside a stack check failure branch.
-// No-op in immediate/optimized mode.
+// No-op in tracing mode (gas already deducted).
 func (e *emitter) emitFlushOnError() {
-	if e.immediateGas || e.optimized {
+	if e.tracing {
 		return
 	}
 	e.p("if gas.remaining < gasCounter {\n")
@@ -410,10 +406,6 @@ func (e *emitter) emitAccumulateForkGated(op opDef) {
 
 // emitShapedBody emits the stack check + body for shaped opcodes.
 func (e *emitter) emitShapedBody(op opDef) {
-	if e.optimized {
-		e.emitUncheckedShapedBody(op)
-		return
-	}
 	switch op.shape {
 	case shapeBinaryOp:
 		e.p("s := interp.Stack\n")
@@ -469,43 +461,10 @@ func (e *emitter) emitShapedBody(op opDef) {
 	}
 }
 
-func (e *emitter) emitUncheckedShapedBody(op opDef) {
-	switch op.shape {
-	case shapeBinaryOp:
-		e.p("s := interp.Stack\n")
-		e.p("s.top--\n")
-		e.emitBody(op)
-	case shapeUnaryOp:
-		if op.inline && op.funcName != "" {
-			e.p("s := interp.Stack\n")
-		}
-		e.emitBody(op)
-	case shapeTernaryOp:
-		e.p("s := interp.Stack\n")
-		e.p("s.top -= 2\n")
-		e.emitBody(op)
-	case shapePushVal:
-		if op.inline && op.funcName != "" {
-			e.p("s := interp.Stack\n")
-		}
-		e.emitBody(op)
-	case shapePop1:
-		e.emitBody(op)
-	case shapeCustom:
-		e.emitBody(op)
-	}
-}
-
 // emitDup emits a DUP<n> case (n=1..16).
 func (e *emitter) emitDup(n int) {
 	e.p("case opcode.DUP%d:\n", n)
 	e.emitGas("spec.GasVerylow")
-	if e.optimized {
-		e.p("s := interp.Stack\n")
-		e.p("s.data[s.top] = s.data[s.top-%d]\n", n)
-		e.p("s.top++\n")
-		return
-	}
 	e.p("s := interp.Stack\n")
 	e.p("if s.top < %d || s.top >= StackLimit {\n", n)
 	e.emitFlushOnError()
@@ -520,12 +479,6 @@ func (e *emitter) emitDup(n int) {
 func (e *emitter) emitSwap(n int) {
 	e.p("case opcode.SWAP%d:\n", n)
 	e.emitGas("spec.GasVerylow")
-	if e.optimized {
-		e.p("s := interp.Stack\n")
-		e.p("t := s.top - 1\n")
-		e.p("s.data[t], s.data[t-%d] = s.data[t-%d], s.data[t]\n", n, n)
-		return
-	}
 	e.p("s := interp.Stack\n")
 	e.p("t := s.top - 1\n")
 	e.p("if t < %d {\n", n)
@@ -562,14 +515,6 @@ func (e *emitter) emitPushGeneric() {
 	}
 	e.p(":\n")
 	e.emitGas("spec.GasVerylow")
-	if e.optimized {
-		e.p("s := interp.Stack\n")
-		e.p("n := int(op - opcode.PUSH0)\n")
-		e.p("s.data[s.top] = *new(uint256.Int).SetBytes(bc.code[bc.pc : bc.pc+n])\n")
-		e.p("bc.pc += n\n")
-		e.p("s.top++\n")
-		return
-	}
 	e.p("s := interp.Stack\n")
 	e.p("if s.top >= StackLimit {\n")
 	e.emitFlushOnError()
@@ -591,14 +536,6 @@ func (e *emitter) emitPush(op opDef) {
 		e.emitFlushOnError()
 		e.p("interp.HaltNotActivated()\n")
 		e.p("} else {\n")
-	}
-	if e.optimized {
-		e.p("s := interp.Stack\n")
-		e.emitInlineBody(op)
-		if op.fork != "" {
-			e.p("}\n")
-		}
-		return
 	}
 	e.p("s := interp.Stack\n")
 	e.p("if s.top >= StackLimit {\n")
@@ -646,83 +583,18 @@ func (e *emitter) emitAllCases() {
 // ---------------------------------------------------------------------------
 
 func (e *emitter) emitRunFunc() {
-	e.immediateGas = false
-	e.optimized = true
+	e.tracing = false
 	e.p(`// Run executes bytecode until halted using direct switch dispatch.
-// Static gas and stack requirements are checked once per precomputed basic
-// block. Dynamic opcodes are block boundaries, preserving exact GAS/call
-// semantics while avoiding per-opcode static gas and stack checks in the
-// straight-line hot path.
+// Static gas is accumulated in a local gasCounter variable. Instead of
+// checking and deducting gas per-instruction, static gas costs are summed
+// across a basic block and flushed (checked + deducted) at block boundaries
+// (jumps, dynamic-gas opcodes, halting opcodes). This eliminates one branch
+// + one memory write per static-gas instruction in the hot loop.
 func (DefaultRunner) Run(interp *Interpreter, host Host) {
 bc := interp.Bytecode
 gas := &interp.Gas
-bc.ensureBasicBlocks()
-if len(bc.basicBlocks) > 1 && bc.originalLen/len(bc.basicBlocks) < 8 {
-	PlainRunner{}.Run(interp, host)
-	return
-}
-if len(bc.basicBlocks) == 1 {
-	block := &bc.basicBlocks[0]
-	baseGas := block.baseGas(interp.ForkGas)
-	if gas.remaining < baseGas {
-		interp.HaltOOG()
-		return
-	}
-	sTop := interp.Stack.top
-	if sTop < int(block.StackRequired) {
-		gas.remaining -= baseGas
-		interp.HaltUnderflow()
-		return
-	}
-	if sTop+int(block.StackMaxGrowth) > StackLimit {
-		gas.remaining -= baseGas
-		interp.HaltOverflow()
-		return
-	}
-	gas.remaining -= baseGas
-	for bc.running {
-		op := bc.code[bc.pc]
-		bc.pc++
-
-		switch op {
-`)
-	e.emitAllCases()
-	e.p(`		}
-	}
-	return
-}
-blockStartPC := -1
-blockEndPC := 0
+var gasCounter uint64
 for bc.running {
-if bc.pc < blockStartPC || bc.pc >= blockEndPC {
-	block := bc.BasicBlockAt(bc.pc)
-	if block != nil {
-		blockStartPC = bc.pc
-		blockEndPC = int(block.EndPC)
-	} else {
-		blockStartPC = bc.pc
-		blockEndPC = bc.pc + 1
-	}
-	if block != nil {
-	baseGas := block.baseGas(interp.ForkGas)
-	if gas.remaining < baseGas {
-		interp.HaltOOG()
-		return
-	}
-	sTop := interp.Stack.top
-	if sTop < int(block.StackRequired) {
-		gas.remaining -= baseGas
-		interp.HaltUnderflow()
-		return
-	}
-	if sTop+int(block.StackMaxGrowth) > StackLimit {
-		gas.remaining -= baseGas
-		interp.HaltOverflow()
-		return
-	}
-	gas.remaining -= baseGas
-	}
-}
 op := bc.code[bc.pc]
 bc.pc++
 
@@ -732,29 +604,6 @@ switch op {
 	e.p("}\n") // switch
 	e.p("}\n") // for
 	e.p("}\n") // func
-	e.optimized = false
-}
-
-func (e *emitter) emitPlainRunFunc() {
-	e.immediateGas = true
-	e.optimized = false
-	e.p(`// Run executes bytecode with simple per-opcode gas and stack checks.
-// It deliberately avoids the basic-block optimization and is intended for
-// RPC/debug paths that prefer direct opcode-by-opcode behavior.
-func (PlainRunner) Run(interp *Interpreter, host Host) {
-bc := interp.Bytecode
-gas := &interp.Gas
-for bc.running {
-op := bc.code[bc.pc]
-bc.pc++
-
-switch op {
-`)
-	e.emitAllCases()
-	e.p("}\n")
-	e.p("}\n")
-	e.p("}\n")
-	e.immediateGas = false
 }
 
 // ---------------------------------------------------------------------------
@@ -762,8 +611,7 @@ switch op {
 // ---------------------------------------------------------------------------
 
 func (e *emitter) emitRunWithTracingFunc() {
-	e.immediateGas = true
-	e.optimized = false
+	e.tracing = true
 	e.p(`// Run executes bytecode with per-opcode tracing hooks.
 // Unlike DefaultRunner.Run, there is no gas accumulator — each opcode
 // deducts its static gas immediately, so the tracer receives accurate
@@ -810,7 +658,7 @@ switch op {
 
 	e.p("}\n") // for
 	e.p("}\n") // func
-	e.immediateGas = false
+	e.tracing = false
 }
 
 // ---------------------------------------------------------------------------
@@ -824,112 +672,6 @@ func gasToTableExpr(gas string) string {
 		return "fg." + strings.TrimPrefix(gas, "interp.ForkGas.")
 	}
 	return gas
-}
-
-func blockGasKind(gas string) string {
-	switch gas {
-	case "interp.ForkGas.Balance":
-		return "blockGasBalance"
-	case "interp.ForkGas.ExtCodeSize":
-		return "blockGasExtCodeSize"
-	case "interp.ForkGas.ExtCodeHash":
-		return "blockGasExtCodeHash"
-	case "interp.ForkGas.Sload":
-		return "blockGasSload"
-	case "interp.ForkGas.Call":
-		return "blockGasCall"
-	case "interp.ForkGas.Selfdestruct":
-		return "blockGasSelfdestruct"
-	default:
-		return "blockGasNone"
-	}
-}
-
-func stackEffectForShape(s shape) (required, change int) {
-	switch s {
-	case shapeBinaryOp:
-		return 2, -1
-	case shapeUnaryOp:
-		return 1, 0
-	case shapeTernaryOp:
-		return 3, -2
-	case shapePushVal:
-		return 0, 1
-	case shapePop1:
-		return 1, -1
-	default:
-		return 0, 0
-	}
-}
-
-func endsBasicBlock(op opDef) bool {
-	if op.mode == modeFlush && op.name != "JUMPDEST" {
-		return true
-	}
-	switch op.name {
-	case "STOP", "JUMP", "JUMPI", "RETURN", "REVERT", "INVALID", "SELFDESTRUCT":
-		return true
-	default:
-		return false
-	}
-}
-
-func (e *emitter) emitBlockInstructionInfo() {
-	e.p("type blockGasKind uint8\n\n")
-	e.p("const (\n")
-	e.p("blockGasNone blockGasKind = iota\n")
-	e.p("blockGasBalance\n")
-	e.p("blockGasExtCodeSize\n")
-	e.p("blockGasExtCodeHash\n")
-	e.p("blockGasSload\n")
-	e.p("blockGasCall\n")
-	e.p("blockGasSelfdestruct\n")
-	e.p(")\n\n")
-	e.p("type blockOpcodeInfo struct {\n")
-	e.p("constGas uint64\n")
-	e.p("forkGas blockGasKind\n")
-	e.p("stackRequired int16\n")
-	e.p("stackChange int16\n")
-	e.p("startsBlock bool\n")
-	e.p("endsBlock bool\n")
-	e.p("}\n\n")
-	e.p("func blockInstructionInfo(op byte) blockOpcodeInfo {\n")
-	e.p("switch op {\n")
-	for _, op := range opcodes {
-		req, change := stackEffectForShape(op.shape)
-		starts := op.name == "JUMPDEST" || (op.mode == modeFlush && op.name != "JUMPDEST")
-		ends := endsBasicBlock(op)
-		constGas := "0"
-		forkGas := "blockGasNone"
-		if op.gas != "" {
-			if strings.HasPrefix(op.gas, "interp.ForkGas.") {
-				forkGas = blockGasKind(op.gas)
-			} else {
-				constGas = op.gas
-			}
-		}
-		e.p("case opcode.%s:\n", op.name)
-		e.p("return blockOpcodeInfo{constGas: %s, forkGas: %s, stackRequired: %d, stackChange: %d, startsBlock: %t, endsBlock: %t}\n",
-			constGas, forkGas, req, change, starts, ends)
-	}
-	e.p("case opcode.PUSH0:\n")
-	e.p("return blockOpcodeInfo{constGas: spec.GasBase, stackChange: 1}\n")
-	e.p("}\n")
-	e.p("switch {\n")
-	e.p("case op >= opcode.PUSH1 && op <= opcode.PUSH32:\n")
-	e.p("return blockOpcodeInfo{constGas: spec.GasVerylow, stackChange: 1}\n")
-	e.p("case op >= opcode.DUP1 && op <= opcode.DUP16:\n")
-	e.p("n := int16(op - opcode.DUP1 + 1)\n")
-	e.p("return blockOpcodeInfo{constGas: spec.GasVerylow, stackRequired: n, stackChange: 1}\n")
-	e.p("case op >= opcode.SWAP1 && op <= opcode.SWAP16:\n")
-	e.p("n := int16(op - opcode.SWAP1 + 2)\n")
-	e.p("return blockOpcodeInfo{constGas: spec.GasVerylow, stackRequired: n}\n")
-	e.p("case op >= opcode.LOG0 && op <= opcode.LOG4:\n")
-	e.p("return blockOpcodeInfo{startsBlock: true, endsBlock: true}\n")
-	e.p("default:\n")
-	e.p("return blockOpcodeInfo{endsBlock: true}\n")
-	e.p("}\n")
-	e.p("}\n\n")
 }
 
 func (e *emitter) emitDebugGasTable() {
@@ -1009,11 +751,7 @@ func main() {
 	var buf bytes.Buffer
 	e := &emitter{buf: &buf, bodies: bodies}
 	e.emitHeader()
-	e.emitBlockInstructionInfo()
-	e.p("\n")
 	e.emitRunFunc()
-	e.p("\n")
-	e.emitPlainRunFunc()
 	e.p("\n")
 	e.emitRunWithTracingFunc()
 	e.p("\n")
