@@ -66,16 +66,11 @@ func (b *Bytecode) ResetWithHash(code []byte, hash types.B256) {
 	// If same hash as previous call on this pooled bytecode, skip analysis
 	if b.hash != nil && *b.hash == hash && b.originalLen == originalLen {
 		needed := originalLen + bytecodeEndPadding
-		if cap(b.code) >= needed {
-			b.code = b.code[:needed]
-		} else {
-			b.code = make([]byte, needed)
-		}
-		copy(b.code, code)
-		clear(b.code[originalLen:needed])
+		b.code = b.code[:needed]
 		b.pc = 0
 		b.running = true
-		// jumpTable + jumpTableReady still valid from previous Reset
+		// code bytes, padding, jumpTable, and jumpTableReady are still valid
+		// from the previous Reset for this hash.
 		return
 	}
 
