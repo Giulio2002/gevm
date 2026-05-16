@@ -2,6 +2,8 @@
 package vm
 
 import (
+	"encoding/binary"
+
 	"github.com/Giulio2002/gevm/spec"
 )
 
@@ -20,12 +22,19 @@ func opMload(interp *Interpreter) {
 	top := &s.data[s.top-1]
 	if top[1]|top[2]|top[3] == 0 {
 		offset := int(top[0])
-		if offset >= 0 && offset+32 <= interp.Memory.Len() {
-			*top = interp.Memory.GetU256(offset)
-		} else {
-			if interp.ResizeMemory(offset, 32) {
-				*top = interp.Memory.GetU256(offset)
+		mem := interp.Memory
+		if offset < 0 || offset+32 > len(*mem.buffer)-mem.checkpoint {
+			if !interp.ResizeMemory(offset, 32) {
+				return
 			}
+		}
+		p := mem.checkpoint + offset
+		b := (*mem.buffer)[p : p+32 : p+32]
+		*top = [4]uint64{
+			binary.BigEndian.Uint64(b[24:]),
+			binary.BigEndian.Uint64(b[16:]),
+			binary.BigEndian.Uint64(b[8:]),
+			binary.BigEndian.Uint64(b[0:]),
 		}
 	} else {
 		interp.Halt(InstructionResultInvalidOperandOOG)
