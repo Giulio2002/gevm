@@ -50,7 +50,7 @@ type JournalEntry struct {
 	Target types.Address
 
 	// Balance stores balance-related data.
-	// Used by: AccountDestroyed (had_balance), BalanceChange (old_balance),
+	// Used by: AccountDestroyed (removed_balance), BalanceChange (old_balance),
 	//          BalanceTransfer (balance).
 	Balance uint256.Int
 
@@ -86,13 +86,13 @@ func JournalEntryAccountWarmed(address types.Address) JournalEntry {
 	return JournalEntry{Kind: JournalAccountWarmed, Address: address}
 }
 
-func JournalEntryAccountDestroyed(address, target types.Address, status SelfdestructionRevertStatus, hadBalance uint256.Int) JournalEntry {
+func JournalEntryAccountDestroyed(address, target types.Address, status SelfdestructionRevertStatus, removedBalance uint256.Int) JournalEntry {
 	return JournalEntry{
 		Kind:            JournalAccountDestroyed,
 		Address:         address,
 		Target:          target,
 		DestroyedStatus: status,
-		Balance:         hadBalance,
+		Balance:         removedBalance,
 	}
 }
 

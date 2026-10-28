@@ -962,10 +962,13 @@ func (j *Journal) Selfdestruct(address, target types.Address) (StateLoad[SelfDes
 		}
 		// EIP-8246: a self-beneficiary must not burn the balance, even
 		// when this contract was created in the current transaction.
+		var removedBalance uint256.Int
 		if address != target || !forkID.IsEnabledIn(spec.Amsterdam) {
+			removedBalance = balance
 			acc.Info.Balance = uint256.Int{}
 		}
-		j.Entries = append(j.Entries, JournalEntryAccountDestroyed(address, target, destroyedStatus, balance))
+		// Rollback restores only what was removed, not a retained self-balance.
+		j.Entries = append(j.Entries, JournalEntryAccountDestroyed(address, target, destroyedStatus, removedBalance))
 	} else if address != target {
 		acc.Info.Balance = uint256.Int{}
 		j.Entries = append(j.Entries, JournalEntryBalanceTransfer(address, target, balance))
