@@ -22,6 +22,7 @@ const CallStackLimit = 1024
 // It manages the frame stack, checkpoints, and result propagation.
 type Handler struct {
 	Host           *EvmHost
+	TopGas         *vm.Gas
 	Precompiles    *precompiles.PrecompileSet
 	RootMemory     *vm.Memory            // Root memory for the transaction, shared across frames via child contexts
 	ReturnAlloc    *vm.ReturnDataArena   // Arena for pooling RETURN/REVERT output buffers (owned by Evm)
@@ -69,6 +70,9 @@ func (h *Handler) executeCall(inputs *vm.CallInputs, depth int, parentMem *vm.Me
 	}()
 	forkID := h.Host.Journal.Cfg.Spec
 	gas := newFrameGas(inputs.GasLimit, inputs.StateGas)
+	if depth == 0 && h.TopGas != nil {
+		gas = *h.TopGas
+	}
 
 	// Depth limit check
 	if depth > CallStackLimit {
@@ -79,7 +83,7 @@ func (h *Handler) executeCall(inputs *vm.CallInputs, depth int, parentMem *vm.Me
 	}
 
 	// A top-level value transfer pays its state-dependent dispatch cost.
-	if depth == 0 && forkID.IsEnabledIn(spec.Amsterdam) && !inputs.Value.Value.IsZero() {
+	if depth == 0 && h.TopGas == nil && forkID.IsEnabledIn(spec.Amsterdam) && !inputs.Value.Value.IsZero() {
 		target, err := h.Host.Journal.LoadAccount(inputs.TargetAddress)
 		if err != nil {
 			return vm.NewCallOutcome(vm.NewInterpreterResult(vm.InstructionResultFatalExternalError, nil, gas), inputs.ReturnMemoryOffset)
@@ -127,7 +131,7 @@ func (h *Handler) executeCall(inputs *vm.CallInputs, depth int, parentMem *vm.Me
 			h.hooks.OnEnter(depth, callSchemeToOpcode(inputs.Scheme), inputs.Caller,
 				inputs.BytecodeAddress, inputs.Input, inputs.GasLimit, inputs.Value.Value)
 		}
-		outcome := h.executePrecompile(precompile, inputs.Input, inputs.GasLimit, inputs.ReturnMemoryOffset, checkpoint)
+		outcome := h.executePrecompile(precompile, inputs.Input, gas.Remaining(), inputs.ReturnMemoryOffset, checkpoint)
 		gas.RecordCost(outcome.Result.Gas.Spent())
 		outcome.Result.Gas = gas
 		if h.hooks != nil && h.hooks.OnExit != nil {
@@ -337,6 +341,9 @@ func (h *Handler) executeCreate(inputs *vm.CreateInputs, depth int, parentMem *v
 	}()
 	forkID := h.Host.Journal.Cfg.Spec
 	gas := newFrameGas(inputs.GasLimit, inputs.StateGas)
+	if depth == 0 && h.TopGas != nil {
+		gas = *h.TopGas
+	}
 
 	// Depth limit check
 	if depth > CallStackLimit {

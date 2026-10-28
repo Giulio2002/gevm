@@ -274,6 +274,9 @@ func executeSingleTest(
 		expectedState = tc.PostState
 	}
 	if expectedState != nil {
+		// The root above projects transaction finalization. The optional dump
+		// must observe that same finalized state (not pre-deletion nonces/code).
+		evm.Journal.CommitTx()
 		if err := validatePostState(evm.Journal, expectedState); err != nil {
 			return makeErr(TestErrStateRootMismatch, err.Error())
 		}

@@ -78,14 +78,18 @@ const (
 
 // ExecutionResult holds the final result of EVM transaction execution.
 type ExecutionResult struct {
-	Kind            ResultKind
-	Reason          vm.InstructionResult
-	GasUsed         uint64
-	GasRefund       int64
-	Output          types.Bytes
-	Logs            []state.Log
-	CreatedAddr     *types.Address // Only for successful CREATE
-	ValidationError bool           // True if failure was during tx validation (before execution)
+	Kind    ResultKind
+	Reason  vm.InstructionResult
+	GasUsed uint64
+	// Amsterdam block-accounting dimensions, before ordinary refund capping.
+	// Zero for older forks; GasUsed remains the sender-facing charged gas.
+	ExecutionGasUsed uint64
+	StateGasUsed     uint64
+	GasRefund        int64
+	Output           types.Bytes
+	Logs             []state.Log
+	CreatedAddr      *types.Address // Only for successful CREATE
+	ValidationError  bool           // True if failure was during tx validation (before execution)
 }
 
 // IsSuccess returns true if execution succeeded.
@@ -297,7 +301,7 @@ func (evm *Evm) transact(tx *Transaction, copyResult bool) ExecutionResult {
 		}
 		// Max blobs per transaction: 6 (Cancun), 9 (Prague+)
 		maxBlobs := 6
-		if evm.ForkID.IsEnabledIn(spec.Prague) {
+		if evm.ForkID.IsEnabledIn(spec.Prague) && !evm.ForkID.IsEnabledIn(spec.Osaka) {
 			maxBlobs = 9
 		}
 		if len(tx.BlobHashes) > maxBlobs {
@@ -327,7 +331,7 @@ func (evm *Evm) transact(tx *Transaction, copyResult bool) ExecutionResult {
 		blockGasLimit = ^uint64(0)
 	}
 	if tx.GasLimit > blockGasLimit {
-		return haltResult(vm.InstructionResultGasLimitTooHigh)
+		return haltResult(vm.InstructionResultBlockGasLimitTooHigh)
 	}
 
 	// EIP-3860: initcode size limit (Shanghai+)
@@ -349,7 +353,7 @@ func (evm *Evm) transact(tx *Transaction, copyResult bool) ExecutionResult {
 
 	// EIP-7623: floor gas must not exceed gas limit (Prague+)
 	if evm.ForkID.IsEnabledIn(spec.Prague) && initAndFloorGas.FloorGas > tx.GasLimit {
-		return haltResult(vm.InstructionResultOutOfGas)
+		return haltResult(vm.InstructionResultGasFloorTooLow)
 	}
 
 	// --- Phase 2: Pre-execution ---
@@ -373,6 +377,10 @@ func (evm *Evm) transact(tx *Transaction, copyResult bool) ExecutionResult {
 		}
 	}
 
+	// EIP-2681: the maximum nonce cannot be incremented.
+	if evm.ForkID.IsEnabledIn(spec.London) && tx.Nonce == ^uint64(0) {
+		return haltResult(vm.InstructionResultNonceOverflow)
+	}
 	// Nonce check
 	if callerAcc.Info.Nonce != tx.Nonce {
 		return haltResult(vm.InstructionResultNonceMismatch)
@@ -494,7 +502,7 @@ func (evm *Evm) transact(tx *Transaction, copyResult bool) ExecutionResult {
 
 	// EIP-7702: apply authorization list (Prague+)
 	var eip7702Refund int64
-	if tx.TxType == TxTypeEIP7702 && len(tx.AuthorizationList) > 0 {
+	if tx.TxType == TxTypeEIP7702 && len(tx.AuthorizationList) > 0 && !evm.ForkID.IsEnabledIn(spec.Amsterdam) {
 		eip7702Refund = evm.applyEIP7702AuthList(tx)
 	}
 
@@ -514,34 +522,51 @@ func (evm *Evm) transact(tx *Transaction, copyResult bool) ExecutionResult {
 
 	// Call executeCall/executeCreate directly to avoid FrameInput heap escape.
 	var frameResult vm.FrameResult
-	switch tx.Kind {
-	case TxKindCall:
-		callInputs := vm.CallInputs{
-			Input:              tx.Input,
-			ReturnMemoryOffset: vm.MemoryRange{},
-			GasLimit:           gasAvailable,
-			StateGas:           reservoir,
-			BytecodeAddress:    tx.To,
-			TargetAddress:      tx.To,
-			Caller:             tx.Caller,
-			Value:              vm.NewCallValueTransfer(tx.Value),
-			Scheme:             vm.CallSchemeCall,
-			IsStatic:           false,
+	prepareOK := true
+	if evm.ForkID.IsEnabledIn(spec.Amsterdam) && tx.Kind == TxKindCall {
+		topGas := newFrameGas(gasAvailable, reservoir)
+		checkpoint := evm.Journal.Checkpoint()
+		prepareOK = evm.prepareAmsterdamCall(tx, &topGas)
+		if prepareOK {
+			evm.Journal.CheckpointCommit()
+			handler.TopGas = &topGas
+		} else {
+			evm.Journal.CheckpointRevert(checkpoint)
+			topGas.RestoreStateGasToEntry(reservoir)
+			topGas.SpendAll()
+			frameResult = vm.NewFrameResultCall(vm.NewCallOutcome(vm.NewInterpreterResult(vm.InstructionResultOutOfGas, nil, topGas), vm.MemoryRange{}))
 		}
-		frameResult = vm.NewFrameResultCall(handler.executeCall(&callInputs, 0, rootMemory))
-
-	case TxKindCreate:
-		createInputs := vm.CreateInputs{
-			Caller:   tx.Caller,
-			Scheme:   vm.NewCreateSchemeCreate(),
-			Value:    tx.Value,
-			InitCode: tx.Input,
-			GasLimit: gasAvailable,
-			StateGas: reservoir,
-		}
-		frameResult = vm.NewFrameResultCreate(handler.executeCreate(&createInputs, 0, rootMemory))
 	}
+	if prepareOK {
+		switch tx.Kind {
+		case TxKindCall:
+			callInputs := vm.CallInputs{
+				Input:              tx.Input,
+				ReturnMemoryOffset: vm.MemoryRange{},
+				GasLimit:           gasAvailable,
+				StateGas:           reservoir,
+				BytecodeAddress:    tx.To,
+				TargetAddress:      tx.To,
+				Caller:             tx.Caller,
+				Value:              vm.NewCallValueTransfer(tx.Value),
+				Scheme:             vm.CallSchemeCall,
+				IsStatic:           false,
+			}
+			frameResult = vm.NewFrameResultCall(handler.executeCall(&callInputs, 0, rootMemory))
 
+		case TxKindCreate:
+			createInputs := vm.CreateInputs{
+				Caller:   tx.Caller,
+				Scheme:   vm.NewCreateSchemeCreate(),
+				Value:    tx.Value,
+				InitCode: tx.Input,
+				GasLimit: gasAvailable,
+				StateGas: reservoir,
+			}
+			frameResult = vm.NewFrameResultCreate(handler.executeCreate(&createInputs, 0, rootMemory))
+		}
+
+	}
 	// --- Phase 4: Post-execution ---
 
 	// Extract result from frame
@@ -576,6 +601,14 @@ func (evm *Evm) transact(tx *Transaction, copyResult bool) ExecutionResult {
 		gas.RecordRefund(eip7702Refund)
 	}
 
+	var executionGasUsed, stateGasUsed uint64
+	if evm.ForkID.IsEnabledIn(spec.Amsterdam) {
+		net := interpResult.Gas.NetStateGasUsed(reservoir)
+		if net > 0 {
+			stateGasUsed = uint64(net)
+		}
+		executionGasUsed = max(gas.Spent()-stateGasUsed, initAndFloorGas.FloorGas)
+	}
 	// Step 1: Refund cap per EIP-3529 — applied unconditionally.
 	// For reverted/failed executions, only eip7702 refund may be non-zero.
 	evm.applyRefundLimit(&gas)
@@ -632,11 +665,13 @@ func (evm *Evm) transact(tx *Transaction, copyResult bool) ExecutionResult {
 		}
 	}
 	result := ExecutionResult{
-		GasUsed:     gas.Used(),
-		GasRefund:   gas.Refunded(),
-		Output:      output,
-		Logs:        logs,
-		CreatedAddr: createdAddr,
+		GasUsed:          gas.Used(),
+		ExecutionGasUsed: executionGasUsed,
+		StateGasUsed:     stateGasUsed,
+		GasRefund:        gas.Refunded(),
+		Output:           output,
+		Logs:             logs,
+		CreatedAddr:      createdAddr,
 	}
 
 	switch {
@@ -815,7 +850,18 @@ func (evm *Evm) rewardBeneficiary(gasPrice uint256.Int, gasUsed uint64) {
 // applyEIP7702AuthList processes the authorization list for EIP-7702 transactions.
 // Returns the total refund to apply (existing authorities get PER_EMPTY_ACCOUNT_COST - PER_AUTH_BASE_COST refund).
 func (evm *Evm) applyEIP7702AuthList(tx *Transaction) int64 {
+	refund, _ := evm.applyAuthList(tx, nil)
+	return refund
+}
+
+func (evm *Evm) applyAuthList(tx *Transaction, gas *vm.Gas) (int64, bool) {
 	var refund int64
+	paid := map[types.Address]bool{tx.Caller: true}
+	if !tx.Value.IsZero() {
+		paid[tx.To] = true
+	}
+	delegationPaid := make(map[types.Address]bool)
+	preDelegated := make(map[types.Address]bool)
 
 	for i := range tx.AuthorizationList {
 		auth := &tx.AuthorizationList[i]
@@ -856,8 +902,34 @@ func (evm *Evm) applyEIP7702AuthList(tx *Transaction) int64 {
 			continue
 		}
 
-		// 7. Refund: if authority already existed (not empty), refund partial cost
-		if !acc.IsEmpty() {
+		// Amsterdam charges state-dependent writes rather than an upfront
+		// scalar fee followed by an existing-account refund.
+		if gas != nil {
+			if acc.IsLoadedAsNotExisting() && acc.Info.IsEmpty() && !gas.RecordStateCost(120*1530) {
+				return 0, false
+			}
+			if !paid[authority] {
+				if !gas.RecordCost(9000) {
+					return 0, false
+				}
+				paid[authority] = true
+			}
+			delegated, seen := preDelegated[authority]
+			if !seen {
+				code, err := evm.host.loadCode(authority, acc)
+				if err != nil {
+					return 0, false
+				}
+				delegated = IsEIP7702Bytecode(code)
+				preDelegated[authority] = delegated
+			}
+			if auth.Address != (types.Address{}) {
+				if !delegated && !delegationPaid[authority] && !gas.RecordStateCost(23*1530) {
+					return 0, false
+				}
+				delegationPaid[authority] = true
+			}
+		} else if !acc.IsEmpty() {
 			refund += int64(eip7702PerEmptyAccountCost - eip7702PerAuthBaseCost)
 		}
 
@@ -874,11 +946,12 @@ func (evm *Evm) applyEIP7702AuthList(tx *Transaction) int64 {
 			evm.Journal.SetCodeWithHash(authority, code, codeHash)
 		}
 
-		// 9. Bump nonce
+		// Journal the nonce so preparation OOG can undo prior authorizations.
+		evm.Journal.Entries = append(evm.Journal.Entries, state.JournalEntryNonceChange(authority, acc.Info.Nonce))
 		acc.Info.Nonce++
 	}
 
-	return refund
+	return refund, true
 }
 
 var (

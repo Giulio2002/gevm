@@ -1,0 +1,352 @@
+{
+    "tests/amsterdam/eip2780_reduce_intrinsic_tx_gas/test_authorization_charges.py::test_account_write_first_write_of_authority[fork_Amsterdam-state_test-authority_prestate_existing_eoa]": {
+        "env": {
+            "currentCoinbase": "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
+            "currentGasLimit": "0x07270e00",
+            "currentNumber": "0x01",
+            "currentTimestamp": "0x03e8",
+            "currentRandom": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "currentDifficulty": "0x00",
+            "currentBaseFee": "0x07",
+            "currentExcessBlobGas": "0x00",
+            "slotNumber": "0x00"
+        },
+        "pre": {
+            "0x4e59b44847b379578588920ca78fbf26c0b4956c": {
+                "nonce": "0x01",
+                "balance": "0x00",
+                "code": "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf3",
+                "storage": {}
+            },
+            "0xf6c3a9edc1afa0ad5b720e4d42e1437c43d3b3ff": {
+                "nonce": "0x00",
+                "balance": "0x033b2e3c9fd0803ce8000000",
+                "code": "0x",
+                "storage": {}
+            },
+            "0x37f536464af59c8d7358cae965f92cbeadd58dcb": {
+                "nonce": "0x01",
+                "balance": "0x00",
+                "code": "0x00",
+                "storage": {}
+            },
+            "0xc4028cd457e62aaa998b95f7edf9655797c54309": {
+                "nonce": "0x01",
+                "balance": "0x00",
+                "code": "0x00",
+                "storage": {}
+            },
+            "0xf36afef4dcb45e52f80cb039335952f77cec8960": {
+                "nonce": "0x00",
+                "balance": "0x01",
+                "code": "0x",
+                "storage": {}
+            }
+        },
+        "transaction": {
+            "chainId": "0x01",
+            "nonce": "0x00",
+            "maxPriorityFeePerGas": "0x00",
+            "maxFeePerGas": "0x07",
+            "gasLimit": [
+                "0x0105be"
+            ],
+            "to": "0x37f536464af59c8d7358cae965f92cbeadd58dcb",
+            "value": [
+                "0x00"
+            ],
+            "data": [
+                "0x"
+            ],
+            "accessLists": [
+                []
+            ],
+            "authorizationList": [
+                {
+                    "chainId": "0x00",
+                    "address": "0xc4028cd457e62aaa998b95f7edf9655797c54309",
+                    "nonce": "0x00",
+                    "v": "0x01",
+                    "r": "0x1ff854ba645f28f71cc6282e0849e586336db92a90eb4c5d34fb6fc41c8f97ac",
+                    "s": "0x6f5deca1a3d5f685caa5d596b6ee04e2e79df66ec26a3054ddf008225cb2e6ca",
+                    "signer": "0xf36afef4dcb45e52f80cb039335952f77cec8960",
+                    "yParity": "0x01"
+                }
+            ],
+            "sender": "0xf6c3a9edc1afa0ad5b720e4d42e1437c43d3b3ff",
+            "secretKey": "0x1ad604b3d94e06ec50b27732ec677f3d857c4d588f082f0016317697dd3a2d92"
+        },
+        "post": {
+            "Amsterdam": [
+                {
+                    "hash": "0xd48447d406c97a2729ac74d97201ff4e6be0497e07fda86a4af36341908ac937",
+                    "logs": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "receipt": {
+                        "transactionHash": "0x257e4ae57d9aeb17293f2cd63ada46f0234c2310e5048a6e2a5a3c1d69362054",
+                        "type": "0x04",
+                        "cumulativeGasUsed": "0x0105be",
+                        "bloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                        "logs": [],
+                        "status": true,
+                        "rlp": "0x04f9010901830105beb9010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c0"
+                    },
+                    "txbytes": "0x04f8c101808007830105be9437f536464af59c8d7358cae965f92cbeadd58dcb8080c0f85cf85a8094c4028cd457e62aaa998b95f7edf9655797c543098001a01ff854ba645f28f71cc6282e0849e586336db92a90eb4c5d34fb6fc41c8f97aca06f5deca1a3d5f685caa5d596b6ee04e2e79df66ec26a3054ddf008225cb2e6ca80a0d1b33503bdc6906be8f6e881a31a67df7adc4587f293ee6a54082618faa9d809a072053cb5b1283506109b989a8e2eeb1812a621989c883006fcae33e47c5544bf",
+                    "indexes": {
+                        "data": 0,
+                        "gas": 0,
+                        "value": 0
+                    },
+                    "state": {
+                        "0x4e59b44847b379578588920ca78fbf26c0b4956c": {
+                            "nonce": "0x01",
+                            "balance": "0x00",
+                            "code": "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf3",
+                            "storage": {}
+                        },
+                        "0xf6c3a9edc1afa0ad5b720e4d42e1437c43d3b3ff": {
+                            "nonce": "0x01",
+                            "balance": "0x033b2e3c9fd0803ce7f8d7ce",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x37f536464af59c8d7358cae965f92cbeadd58dcb": {
+                            "nonce": "0x01",
+                            "balance": "0x00",
+                            "code": "0x00",
+                            "storage": {}
+                        },
+                        "0xc4028cd457e62aaa998b95f7edf9655797c54309": {
+                            "nonce": "0x01",
+                            "balance": "0x00",
+                            "code": "0x00",
+                            "storage": {}
+                        },
+                        "0xf36afef4dcb45e52f80cb039335952f77cec8960": {
+                            "nonce": "0x01",
+                            "balance": "0x01",
+                            "code": "0xef0100c4028cd457e62aaa998b95f7edf9655797c54309",
+                            "storage": {}
+                        }
+                    }
+                }
+            ]
+        },
+        "config": {
+            "blobSchedule": {
+                "Cancun": {
+                    "target": "0x03",
+                    "max": "0x06",
+                    "baseFeeUpdateFraction": "0x32f0ed"
+                },
+                "Prague": {
+                    "target": "0x06",
+                    "max": "0x09",
+                    "baseFeeUpdateFraction": "0x4c6964"
+                },
+                "Osaka": {
+                    "target": "0x06",
+                    "max": "0x09",
+                    "baseFeeUpdateFraction": "0x4c6964"
+                },
+                "BPO1": {
+                    "target": "0x0a",
+                    "max": "0x0f",
+                    "baseFeeUpdateFraction": "0x7f5a51"
+                },
+                "BPO2": {
+                    "target": "0x0e",
+                    "max": "0x15",
+                    "baseFeeUpdateFraction": "0xb24b3f"
+                },
+                "Amsterdam": {
+                    "target": "0x0e",
+                    "max": "0x15",
+                    "baseFeeUpdateFraction": "0xb24b3f"
+                }
+            },
+            "chainid": "0x01"
+        },
+        "_info": {
+            "hash": "0x6908310667a068bf80683ac6f1acdcaf2cb6ea5b149679c82168e1571d16bce0",
+            "fixture-format": "state_test",
+            "comment": "`execution-specs` generated test",
+            "filling-transition-tool": "2.19.0",
+            "description": "``ACCOUNT_WRITE`` is charged on the first write to the authority\nwithin the transaction, independent of whether its account leaf\nalready exists.\n\nApplying an authorization writes the authority's leaf (code and\nnonce), so the first authorization on any authority not yet written\nin the transaction pays ``ACCOUNT_WRITE``:\n\n- ``non_existent``: the authority also pays ``NEW_ACCOUNT`` for the\n  fresh leaf (and ``AUTH_BASE`` for the net-new indicator).\n- ``existing_eoa``: the leaf exists, but the delegation write is\n  still this transaction's first write to it, so ``ACCOUNT_WRITE``\n  is charged all the same (plus ``AUTH_BASE``).",
+            "url": "https://github.com/ethereum/execution-specs/blob/e27f097ec7b3e6e8ee9c2c1873c183e8f7da7a6e/tests/amsterdam/eip2780_reduce_intrinsic_tx_gas/test_authorization_charges.py#L194",
+            "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-2780.md",
+            "reference-spec-version": "7243c92ba812437c64bae9fc6524ee269b29daa9"
+        }
+    },
+    "tests/amsterdam/eip2780_reduce_intrinsic_tx_gas/test_authorization_charges.py::test_account_write_first_write_of_authority[fork_Amsterdam-state_test-authority_prestate_non_existent]": {
+        "env": {
+            "currentCoinbase": "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
+            "currentGasLimit": "0x07270e00",
+            "currentNumber": "0x01",
+            "currentTimestamp": "0x03e8",
+            "currentRandom": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "currentDifficulty": "0x00",
+            "currentBaseFee": "0x07",
+            "currentExcessBlobGas": "0x00",
+            "slotNumber": "0x00"
+        },
+        "pre": {
+            "0x4e59b44847b379578588920ca78fbf26c0b4956c": {
+                "nonce": "0x01",
+                "balance": "0x00",
+                "code": "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf3",
+                "storage": {}
+            },
+            "0xf6c3a9edc1afa0ad5b720e4d42e1437c43d3b3ff": {
+                "nonce": "0x00",
+                "balance": "0x033b2e3c9fd0803ce8000000",
+                "code": "0x",
+                "storage": {}
+            },
+            "0x37f536464af59c8d7358cae965f92cbeadd58dcb": {
+                "nonce": "0x01",
+                "balance": "0x00",
+                "code": "0x00",
+                "storage": {}
+            },
+            "0xc4028cd457e62aaa998b95f7edf9655797c54309": {
+                "nonce": "0x01",
+                "balance": "0x00",
+                "code": "0x00",
+                "storage": {}
+            }
+        },
+        "transaction": {
+            "chainId": "0x01",
+            "nonce": "0x00",
+            "maxPriorityFeePerGas": "0x00",
+            "maxFeePerGas": "0x07",
+            "gasLimit": [
+                "0x03d2ee"
+            ],
+            "to": "0x37f536464af59c8d7358cae965f92cbeadd58dcb",
+            "value": [
+                "0x00"
+            ],
+            "data": [
+                "0x"
+            ],
+            "accessLists": [
+                []
+            ],
+            "authorizationList": [
+                {
+                    "chainId": "0x00",
+                    "address": "0xc4028cd457e62aaa998b95f7edf9655797c54309",
+                    "nonce": "0x00",
+                    "v": "0x01",
+                    "r": "0x730ee2f826dff4cd9f38a620ec42ed2d1cb7c446248300a43b983c7141814a4e",
+                    "s": "0x2a4bc410005ae1c1f9f9dddca9d24f9fa766c9f2f6e268340ce71918a1d86e92",
+                    "signer": "0xc0f6dc9e5836f54caadbf59cc69346c508e1992b",
+                    "yParity": "0x01"
+                }
+            ],
+            "sender": "0xf6c3a9edc1afa0ad5b720e4d42e1437c43d3b3ff",
+            "secretKey": "0x1ad604b3d94e06ec50b27732ec677f3d857c4d588f082f0016317697dd3a2d92"
+        },
+        "post": {
+            "Amsterdam": [
+                {
+                    "hash": "0x0cf5ce32a0dd4999927876ef39b497d0c8107b6c91af44a256b3e063da3a3e04",
+                    "logs": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "receipt": {
+                        "transactionHash": "0xfdf7d37c439b83d3c2fd85a7dec5881549d70b4b35085e2c4f06cc45381e0715",
+                        "type": "0x04",
+                        "cumulativeGasUsed": "0x03d2ee",
+                        "bloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                        "logs": [],
+                        "status": true,
+                        "rlp": "0x04f90109018303d2eeb9010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c0"
+                    },
+                    "txbytes": "0x04f8c1018080078303d2ee9437f536464af59c8d7358cae965f92cbeadd58dcb8080c0f85cf85a8094c4028cd457e62aaa998b95f7edf9655797c543098001a0730ee2f826dff4cd9f38a620ec42ed2d1cb7c446248300a43b983c7141814a4ea02a4bc410005ae1c1f9f9dddca9d24f9fa766c9f2f6e268340ce71918a1d86e9280a053f3161756bda0941ccbd14269b94cc220589bea632c8527b85d4415f5e90effa0341a8a96f7394f8fe3cef7209f56835d7d01a2bd8f00b7bc134cdc6169a7a0e2",
+                    "indexes": {
+                        "data": 0,
+                        "gas": 0,
+                        "value": 0
+                    },
+                    "state": {
+                        "0x4e59b44847b379578588920ca78fbf26c0b4956c": {
+                            "nonce": "0x01",
+                            "balance": "0x00",
+                            "code": "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf3",
+                            "storage": {}
+                        },
+                        "0xf6c3a9edc1afa0ad5b720e4d42e1437c43d3b3ff": {
+                            "nonce": "0x01",
+                            "balance": "0x033b2e3c9fd0803ce7e53b7e",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x37f536464af59c8d7358cae965f92cbeadd58dcb": {
+                            "nonce": "0x01",
+                            "balance": "0x00",
+                            "code": "0x00",
+                            "storage": {}
+                        },
+                        "0xc4028cd457e62aaa998b95f7edf9655797c54309": {
+                            "nonce": "0x01",
+                            "balance": "0x00",
+                            "code": "0x00",
+                            "storage": {}
+                        },
+                        "0xc0f6dc9e5836f54caadbf59cc69346c508e1992b": {
+                            "nonce": "0x01",
+                            "balance": "0x00",
+                            "code": "0xef0100c4028cd457e62aaa998b95f7edf9655797c54309",
+                            "storage": {}
+                        }
+                    }
+                }
+            ]
+        },
+        "config": {
+            "blobSchedule": {
+                "Cancun": {
+                    "target": "0x03",
+                    "max": "0x06",
+                    "baseFeeUpdateFraction": "0x32f0ed"
+                },
+                "Prague": {
+                    "target": "0x06",
+                    "max": "0x09",
+                    "baseFeeUpdateFraction": "0x4c6964"
+                },
+                "Osaka": {
+                    "target": "0x06",
+                    "max": "0x09",
+                    "baseFeeUpdateFraction": "0x4c6964"
+                },
+                "BPO1": {
+                    "target": "0x0a",
+                    "max": "0x0f",
+                    "baseFeeUpdateFraction": "0x7f5a51"
+                },
+                "BPO2": {
+                    "target": "0x0e",
+                    "max": "0x15",
+                    "baseFeeUpdateFraction": "0xb24b3f"
+                },
+                "Amsterdam": {
+                    "target": "0x0e",
+                    "max": "0x15",
+                    "baseFeeUpdateFraction": "0xb24b3f"
+                }
+            },
+            "chainid": "0x01"
+        },
+        "_info": {
+            "hash": "0xf2749416c12a799cb44f5931900d8d16c23bec63c793aeba38f3aabb681afc25",
+            "fixture-format": "state_test",
+            "comment": "`execution-specs` generated test",
+            "filling-transition-tool": "2.19.0",
+            "description": "``ACCOUNT_WRITE`` is charged on the first write to the authority\nwithin the transaction, independent of whether its account leaf\nalready exists.\n\nApplying an authorization writes the authority's leaf (code and\nnonce), so the first authorization on any authority not yet written\nin the transaction pays ``ACCOUNT_WRITE``:\n\n- ``non_existent``: the authority also pays ``NEW_ACCOUNT`` for the\n  fresh leaf (and ``AUTH_BASE`` for the net-new indicator).\n- ``existing_eoa``: the leaf exists, but the delegation write is\n  still this transaction's first write to it, so ``ACCOUNT_WRITE``\n  is charged all the same (plus ``AUTH_BASE``).",
+            "url": "https://github.com/ethereum/execution-specs/blob/e27f097ec7b3e6e8ee9c2c1873c183e8f7da7a6e/tests/amsterdam/eip2780_reduce_intrinsic_tx_gas/test_authorization_charges.py#L194",
+            "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-2780.md",
+            "reference-spec-version": "7243c92ba812437c64bae9fc6524ee269b29daa9"
+        }
+    }
+}

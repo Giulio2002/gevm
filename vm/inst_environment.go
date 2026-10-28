@@ -199,6 +199,10 @@ func opGasprice(interp *Interpreter, host Host) {
 
 // opExtcodesize — Custom flush handler (needs Host).
 func opExtcodesize(interp *Interpreter, host Host) {
+	if interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Amsterdam) && !interp.Gas.RecordCost(100) {
+		interp.HaltOOG()
+		return
+	}
 	s := interp.Stack
 	if s.top == 0 {
 		interp.HaltUnderflow()
@@ -219,6 +223,10 @@ func opExtcodesize(interp *Interpreter, host Host) {
 
 // opExtcodecopy — Custom flush handler (needs Host).
 func opExtcodecopy(interp *Interpreter, host Host) {
+	if interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Amsterdam) && !interp.Gas.RecordCost(100) {
+		interp.HaltOOG()
+		return
+	}
 	s := interp.Stack
 	if s.top < 4 {
 		interp.HaltUnderflow()

@@ -7,6 +7,33 @@ import (
 	"testing"
 )
 
+func TestFixtureReportRejectsWrongException(t *testing.T) {
+	data, err := os.ReadFile("testdata/eest-v21.0.2/osaka-transfer.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var suite map[string]map[string]json.RawMessage
+	if err = json.Unmarshal(data, &suite); err != nil {
+		t.Fatal(err)
+	}
+	for _, unit := range suite {
+		var post map[string][]map[string]json.RawMessage
+		json.Unmarshal(unit["post"], &post)
+		post["Osaka"][0]["expectException"] = json.RawMessage(`"TransactionException.INSUFFICIENT_ACCOUNT_FUNDS"`)
+		unit["post"], _ = json.Marshal(post)
+	}
+	data, _ = json.Marshal(suite)
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "case.json"), data, 0600)
+	r, err := RunFixtureReport(dir, RunnerConfig{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Failed != 1 || r.Passed != 0 || r.Unsupported != 0 {
+		t.Fatalf("wrong exception not rejected: %+v", r)
+	}
+}
+
 func TestFixtureReportCountsUnsupported(t *testing.T) {
 	data, err := os.ReadFile("testdata/eest-v21.0.2/osaka-transfer.json")
 	if err != nil {

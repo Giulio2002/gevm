@@ -36,6 +36,42 @@ func (h *Handler) prepareCreateGas(interp *vm.Interpreter, depth int) (charged, 
 	return charged, true
 }
 
+// prepareAmsterdamCall charges state-dependent top-frame preparation. The
+// caller owns a journal checkpoint: any failure undoes ALL authorizations.
+func (evm *Evm) prepareAmsterdamCall(tx *Transaction, gas *vm.Gas) bool {
+	if len(tx.AuthorizationList) > 0 {
+		if _, ok := evm.applyAuthList(tx, gas); !ok {
+			return false
+		}
+		gas.CommitStateGas()
+	}
+	target, err := evm.Journal.LoadAccount(tx.To)
+	if err != nil {
+		return false
+	}
+	if !tx.Value.IsZero() && target.Data.Info.IsEmpty() && !gas.RecordStateCost(120*1530) {
+		return false
+	}
+	code, err := evm.host.loadCode(tx.To, target.Data)
+	if err != nil {
+		return false
+	}
+	if delegate, ok := EIP7702Address(code); ok {
+		load, err := evm.Journal.LoadAccount(delegate)
+		if err != nil {
+			return false
+		}
+		cost := uint64(100)
+		if load.IsCold {
+			cost = 3000
+		}
+		if !gas.RecordCost(cost) {
+			return false
+		}
+	}
+	return true
+}
+
 func newFrameGas(execution, reservoir uint64) vm.Gas {
 	gas := vm.NewGas(execution)
 	gas.SetStateGas(reservoir)

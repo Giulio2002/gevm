@@ -88,6 +88,24 @@ func TestAmsterdamAccountCreationGas(t *testing.T) {
 	}
 }
 
+func TestAmsterdamCodeReadSurcharge(t *testing.T) {
+	for _, code := range [][]byte{{0x60, 33, 0x3b}, {0x5f, 0x5f, 0x5f, 0x60, 33, 0x3c}} {
+		db := newMockDB()
+		db.accounts[addr(1)] = &state.AccountInfo{Balance: u(1_000_000_000), CodeHash: types.KeccakEmpty}
+		db.accounts[addr(32)] = &state.AccountInfo{Nonce: 1, Code: code}
+		e := makeEvm(db, spec.Amsterdam, BlockEnv{})
+		tx := simpleTx(addr(1), addr(32), 0, 100000, 1)
+		want := uint64(18103)
+		if len(code) > 3 {
+			want += 6
+		}
+		got := e.Transact(&tx)
+		if got.GasUsed != want {
+			t.Fatalf("got gas %d want %d", got.GasUsed, want)
+		}
+	}
+}
+
 func TestAmsterdamColdAccountAccess(t *testing.T) {
 	db := newMockDB()
 	db.accounts[addr(1)] = &state.AccountInfo{Balance: u(1_000_000_000), CodeHash: types.KeccakEmpty}
@@ -111,6 +129,19 @@ func TestAmsterdamChildReservoir(t *testing.T) {
 	got := e.Transact(&tx)
 	if len(got.Output) != 32 || got.Output[31] != 1 {
 		t.Fatalf("child failed: %+v", got)
+	}
+}
+
+func TestAmsterdamDimensionSettlement(t *testing.T) {
+	db := newMockDB()
+	db.accounts[addr(1)] = &state.AccountInfo{Balance: u(1_000_000_000), CodeHash: types.KeccakEmpty}
+	db.accounts[addr(32)] = &state.AccountInfo{Nonce: 1, Code: []byte{0x60, 1, 0x5f, 0x55, 0x5f, 0x5f, 0x55}}
+	e := makeEvm(db, spec.Amsterdam, BlockEnv{})
+	tx := simpleTx(addr(1), addr(32), 0, 20_000_000, 1)
+	got := e.Transact(&tx)
+	wantExecution := uint64(15000 + 5 + 2100 + 10000 + 4 + 100)
+	if got.ExecutionGasUsed != wantExecution || got.StateGasUsed != 0 || got.GasUsed != wantExecution-wantExecution/5 {
+		t.Fatalf("wrong settled dimensions: %+v", got)
 	}
 }
 

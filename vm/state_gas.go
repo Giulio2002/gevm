@@ -44,6 +44,12 @@ func (g *Gas) RestoreStateGasToEntry(grant uint64) {
 func (g *Gas) SetStateGas(amount uint64) { g.stateRemaining = amount; g.stateBaseline = amount }
 func (g *Gas) StateGasRemaining() uint64 { return g.stateRemaining }
 
+// NetStateGasUsed measures the transaction's state dimension, including spill.
+// Refunds from prior frames can make the un-clamped result negative.
+func (g *Gas) NetStateGasUsed(grant uint64) int64 {
+	return int64(grant) - int64(g.stateRemaining) + int64(g.stateSpilled) + int64(g.stateCommittedSpill)
+}
+
 // RecordStateCost draws from the reservoir before execution gas. A failed
 // charge is atomic; a later frame rollback must not credit unpaid charges.
 func (g *Gas) RecordStateCost(amount uint64) bool {

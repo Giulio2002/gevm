@@ -82,16 +82,25 @@ func RunFixtureReport(dir string, cfg RunnerConfig) (FixtureReport, error) {
 						c.Status = "unsupported"
 						c.Detail = "unknown fork"
 						report.Unsupported++
-					case tc.ExpectException != nil:
+					case tc.ExpectException != nil && !knownExceptions(*tc.ExpectException):
 						c.Status = "unsupported"
-						c.Detail = "exact transaction-exception matching not implemented: " + *tc.ExpectException
+						c.Detail = "unsupported transaction exception identity: " + *tc.ExpectException
 						report.Unsupported++
 					case tc.Hash.V == types.B256Zero || tc.Logs.V == types.B256Zero:
 						c.Status = "unsupported"
 						c.Detail = "missing state root or logs hash"
 						report.Unsupported++
 					default:
-						r := executeSingleTest(path, name, fork, forkID, unit, &tc, i)
+						var r TestResult
+						if tc.ExpectException != nil {
+							err := executeExceptionCase(unit, &tc, forkID)
+							r.Pass = err == nil
+							if err != nil {
+								r.Detail = err.Error()
+							}
+						} else {
+							r = executeSingleTest(path, name, fork, forkID, unit, &tc, i)
+						}
 						if r.Pass {
 							c.Status = "passed"
 							report.Passed++
