@@ -64,10 +64,10 @@ func (g *GasParams) Get(id GasId) uint64 {
 // gasParamsCache pre-computes GasParams for every ForkID at init time.
 // Since GasParams is read-only during execution, all interpreters sharing the
 // same ForkID can safely share a single pointer.
-var gasParamsCache [20]*GasParams
+var gasParamsCache [Amsterdam + 1]*GasParams
 
 func init() {
-	for i := ForkID(0); i <= Osaka; i++ {
+	for i := ForkID(0); i <= Amsterdam; i++ {
 		gasParamsCache[i] = newGasParams(i)
 	}
 }

@@ -1,4 +1,4 @@
-// Push and EOF stack opcode handlers: PUSH0-PUSH32, DUPN, SWAPN, EXCHANGE.
+// Push and EIP-8024 stack opcode handlers: PUSH0-PUSH32, DUPN, SWAPN, EXCHANGE.
 package vm
 
 import (
@@ -95,13 +95,17 @@ func opPushN(interp *Interpreter, op byte) {
 	s.top++
 }
 
-// opDupN — Custom handler for EOF DUPN. Fork gate (Amsterdam) handled by generator.
+// opDupN — EIP-8024 DUPN. Fork gate (Amsterdam) handled by generator.
 func opDupN(interp *Interpreter) {
 	bc := interp.Bytecode
 	x := int(bc.code[bc.pc])
 	n, ok := decodeSingle(x)
 	if !ok {
 		interp.Halt(InstructionResultInvalidImmediateEncoding)
+		return
+	}
+	if interp.Stack.Len() < n {
+		interp.HaltUnderflow()
 		return
 	}
 	if !interp.Stack.Dup(n) {
@@ -111,7 +115,7 @@ func opDupN(interp *Interpreter) {
 	bc.pc++
 }
 
-// opSwapN — Custom handler for EOF SWAPN. Fork gate (Amsterdam) handled by generator.
+// opSwapN — EIP-8024 SWAPN. Fork gate (Amsterdam) handled by generator.
 func opSwapN(interp *Interpreter) {
 	bc := interp.Bytecode
 	x := int(bc.code[bc.pc])
@@ -121,13 +125,13 @@ func opSwapN(interp *Interpreter) {
 		return
 	}
 	if !interp.Stack.Exchange(0, n) {
-		interp.HaltOverflow()
+		interp.HaltUnderflow()
 		return
 	}
 	bc.pc++
 }
 
-// opExchange — Custom handler for EOF EXCHANGE. Fork gate (Amsterdam) handled by generator.
+// opExchange — EIP-8024 EXCHANGE. Fork gate (Amsterdam) handled by generator.
 func opExchange(interp *Interpreter) {
 	bc := interp.Bytecode
 	x := int(bc.code[bc.pc])
@@ -137,7 +141,7 @@ func opExchange(interp *Interpreter) {
 		return
 	}
 	if !interp.Stack.Exchange(n, m-n) {
-		interp.HaltOverflow()
+		interp.HaltUnderflow()
 		return
 	}
 	bc.pc++

@@ -183,7 +183,8 @@ func (evm *Evm) ReleaseEvm() {
 	evmPool.Put(evm)
 }
 
-// MaxInitCodeSize is the maximum initcode size (EIP-3860): 2 * MaxCodeSize.
+// MaxInitCodeSize is the pre-Amsterdam initcode limit (EIP-3860).
+// Execution uses spec.MaxInitcodeSizeForFork for EIP-7954.
 const MaxInitCodeSize = 2 * MaxCodeSize
 
 func (evm *Evm) Transact(tx *Transaction) ExecutionResult {
@@ -331,7 +332,7 @@ func (evm *Evm) transact(tx *Transaction, copyResult bool) ExecutionResult {
 
 	// EIP-3860: initcode size limit (Shanghai+)
 	if evm.ForkID.IsEnabledIn(spec.Shanghai) && tx.Kind == TxKindCreate {
-		if uint64(len(tx.Input)) > MaxInitCodeSize {
+		if len(tx.Input) > spec.MaxInitcodeSizeForFork(evm.ForkID) {
 			return haltResult(vm.InstructionResultCreateInitCodeSizeLimit)
 		}
 	}

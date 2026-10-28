@@ -325,8 +325,14 @@ func (j *Journal) finalizeTxSelfdestructs() {
 		if acc == nil || !acc.IsSelfdestructedLocally() {
 			continue
 		}
+		balance := acc.Info.Balance
 		acc.Selfdestruct()
 		acc.UnmarkSelfdestructedLocally()
+		if j.Cfg.Spec.IsEnabledIn(spec.Amsterdam) && !balance.IsZero() {
+			// EIP-8246 also preserves funds received after SELFDESTRUCT.
+			acc.Info.Balance = balance
+			acc.UnmarkSelfdestruct()
+		}
 	}
 	j.cachedAcc = nil
 	j.slotCacheLen = 0
@@ -954,7 +960,11 @@ func (j *Journal) Selfdestruct(address, target types.Address) (StateLoad[SelfDes
 		if acc.MarkSelfdestructedLocally() {
 			j.SelfdestructedAddresses = append(j.SelfdestructedAddresses, address)
 		}
-		acc.Info.Balance = uint256.Int{}
+		// EIP-8246: a self-beneficiary must not burn the balance, even
+		// when this contract was created in the current transaction.
+		if address != target || !forkID.IsEnabledIn(spec.Amsterdam) {
+			acc.Info.Balance = uint256.Int{}
+		}
 		j.Entries = append(j.Entries, JournalEntryAccountDestroyed(address, target, destroyedStatus, balance))
 	} else if address != target {
 		acc.Info.Balance = uint256.Int{}

@@ -11,7 +11,8 @@ import (
 	"github.com/holiman/uint256"
 )
 
-// MaxCodeSize is the maximum contract code size (EIP-170).
+// MaxCodeSize is the pre-Amsterdam contract code limit (EIP-170).
+// Execution uses spec.MaxCodeSizeForFork for EIP-7954.
 const MaxCodeSize = 24576
 
 // CallStackLimit is the maximum call depth.
@@ -93,6 +94,7 @@ func (h *Handler) executeCall(inputs *vm.CallInputs, depth int, parentMem *vm.Me
 				inputs.ReturnMemoryOffset,
 			)
 		}
+		h.Host.emitTransferLog(inputs.Caller, inputs.TargetAddress, *tv)
 	}
 
 	// Check if the bytecode address is a precompile
@@ -394,6 +396,8 @@ func (h *Handler) executeCreate(inputs *vm.CreateInputs, depth int, parentMem *v
 		)
 	}
 
+	h.Host.emitTransferLog(inputs.Caller, createdAddress, inputs.Value)
+
 	// Empty init code: commit and return the address
 	if len(inputs.InitCode) == 0 {
 		if h.hooks != nil && h.hooks.OnEnter != nil {
@@ -488,8 +492,8 @@ func (h *Handler) returnCreate(
 		return vm.NewCreateOutcome(result, nil)
 	}
 
-	// EIP-170: code size limit (Spurious Dragon+)
-	maxSize := MaxCodeSize
+	// EIP-170, raised by EIP-7954 in Amsterdam.
+	maxSize := spec.MaxCodeSizeForFork(forkID)
 	if forkID.IsEnabledIn(spec.SpuriousDragon) && len(output) > maxSize {
 		h.Host.Journal.CheckpointRevert(checkpoint)
 		result.Result = vm.InstructionResultCreateContractSizeLimit

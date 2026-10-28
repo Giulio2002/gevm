@@ -35,7 +35,7 @@ func createInner(interp *Interpreter, host Host, isCreate2 bool) {
 	if codeLen != 0 {
 		// EIP-3860: limit and meter initcode
 		if interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Shanghai) {
-			if codeLen > maxInitcodeSize {
+			if codeLen > spec.MaxInitcodeSizeForFork(interp.RuntimeFlag.ForkID) {
 				interp.Halt(InstructionResultCreateInitCodeSizeLimit)
 				return
 			}
@@ -424,4 +424,3 @@ func opStaticcall(interp *Interpreter, host Host) {
 		IsStatic:           true,
 	})
 }
-
