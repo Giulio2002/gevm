@@ -31,9 +31,9 @@ type FixtureReport struct {
 	Cases       []FixtureCaseReport `json:"cases"`
 }
 
-// RunFixtureReport executes state fixtures with strict accounting. Transaction
-// rejection fixtures are unsupported until exact exception matching is wired
-// up: the legacy runner's "any validation error" test is not sufficient.
+// RunFixtureReport executes state fixtures with strict accounting. Rejections
+// require an exact supported exception identity, unchanged state root and empty
+// logs; unknown exception identities remain explicitly unsupported.
 // Malformed/empty input is an error, never a successful zero-case run.
 func RunFixtureReport(dir string, cfg RunnerConfig) (FixtureReport, error) {
 	var report FixtureReport

@@ -299,7 +299,7 @@ func (evm *Evm) transact(tx *Transaction, copyResult bool) ExecutionResult {
 		if len(tx.BlobHashes) == 0 {
 			return haltResult(vm.InstructionResultEmptyBlobs)
 		}
-		// Max blobs per transaction: 6 (Cancun), 9 (Prague+)
+		// Max blobs per transaction: 6 (Cancun), 9 (Prague), 6 (Osaka+).
 		maxBlobs := 6
 		if evm.ForkID.IsEnabledIn(spec.Prague) && !evm.ForkID.IsEnabledIn(spec.Osaka) {
 			maxBlobs = 9
