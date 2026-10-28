@@ -837,7 +837,8 @@ func (evm *Evm) rewardBeneficiary(gasPrice uint256.Int, gasUsed uint64) {
 
 	if reward.IsZero() {
 		load, err := evm.Journal.LoadAccount(evm.Block.Beneficiary)
-		if err == nil && !load.Data.IsLoadedAsNotExisting() {
+		// Before EIP-161, crediting even a zero fee creates the beneficiary.
+		if err == nil && (!evm.ForkID.IsEnabledIn(spec.SpuriousDragon) || !load.Data.IsLoadedAsNotExisting()) {
 			evm.Journal.Touch(evm.Block.Beneficiary)
 		}
 		return
