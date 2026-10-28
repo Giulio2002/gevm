@@ -317,7 +317,7 @@ func (evm *Evm) transact(tx *Transaction, copyResult bool) ExecutionResult {
 	}
 
 	// EIP-7825 (Osaka): transaction gas limit cap
-	if evm.ForkID.IsEnabledIn(spec.Osaka) && tx.GasLimit > spec.TxGasLimitCap {
+	if evm.ForkID.IsEnabledIn(spec.Osaka) && ((!evm.ForkID.IsEnabledIn(spec.Amsterdam) && tx.GasLimit > spec.TxGasLimitCap) || tx.GasLimit > 0xffffffff) {
 		return haltResult(vm.InstructionResultGasLimitTooHigh)
 	}
 
@@ -340,6 +340,9 @@ func (evm *Evm) transact(tx *Transaction, copyResult bool) ExecutionResult {
 	// Calculate intrinsic gas and EIP-7623 floor gas
 	initAndFloorGas := evm.calcIntrinsicGas(tx)
 	intrinsicGas := initAndFloorGas.InitialGas
+	if evm.ForkID.IsEnabledIn(spec.Amsterdam) && (intrinsicGas > spec.TxGasLimitCap || initAndFloorGas.FloorGas > spec.TxGasLimitCap) {
+		return haltResult(vm.InstructionResultOutOfGas)
+	}
 	if intrinsicGas > tx.GasLimit {
 		return haltResult(vm.InstructionResultOutOfGas)
 	}
@@ -503,6 +506,11 @@ func (evm *Evm) transact(tx *Transaction, copyResult bool) ExecutionResult {
 	}
 
 	gasAvailable := tx.GasLimit - intrinsicGas
+	var reservoir uint64
+	if evm.ForkID.IsEnabledIn(spec.Amsterdam) {
+		gasAvailable = min(gasAvailable, spec.TxGasLimitCap-intrinsicGas)
+		reservoir = tx.GasLimit - intrinsicGas - gasAvailable
+	}
 
 	// Call executeCall/executeCreate directly to avoid FrameInput heap escape.
 	var frameResult vm.FrameResult
@@ -512,6 +520,7 @@ func (evm *Evm) transact(tx *Transaction, copyResult bool) ExecutionResult {
 			Input:              tx.Input,
 			ReturnMemoryOffset: vm.MemoryRange{},
 			GasLimit:           gasAvailable,
+			StateGas:           reservoir,
 			BytecodeAddress:    tx.To,
 			TargetAddress:      tx.To,
 			Caller:             tx.Caller,
@@ -528,6 +537,7 @@ func (evm *Evm) transact(tx *Transaction, copyResult bool) ExecutionResult {
 			Value:    tx.Value,
 			InitCode: tx.Input,
 			GasLimit: gasAvailable,
+			StateGas: reservoir,
 		}
 		frameResult = vm.NewFrameResultCreate(handler.executeCreate(&createInputs, 0, rootMemory))
 	}
@@ -552,6 +562,9 @@ func (evm *Evm) transact(tx *Transaction, copyResult bool) ExecutionResult {
 	execRefunded := interpResult.Gas.Refunded()
 
 	gas := vm.NewGasSpent(tx.GasLimit) // limit = tx.GasLimit, remaining = 0
+	if evm.ForkID.IsEnabledIn(spec.Amsterdam) {
+		gas.EraseCost(interpResult.Gas.StateGasRemaining())
+	}
 	if interpResult.Result.IsOkOrRevert() {
 		gas.EraseCost(execRemaining) // remaining += execRemaining
 	}
@@ -659,6 +672,37 @@ const (
 // calcIntrinsicGas calculates the intrinsic gas and EIP-7623 floor gas for a transaction.
 func (evm *Evm) calcIntrinsicGas(tx *Transaction) InitialAndFloorGas {
 	var result InitialAndFloorGas
+	if evm.ForkID.IsEnabledIn(spec.Amsterdam) {
+		base := uint64(12000)
+		if tx.Kind == TxKindCreate {
+			base += 12000
+		} else if tx.To != tx.Caller {
+			base += 3000
+			if !tx.Value.IsZero() {
+				base += 6000
+			}
+		}
+		result.InitialGas = base
+		result.FloorGas = base + uint64(len(tx.Input))*4*16
+		for _, b := range tx.Input {
+			if b == 0 {
+				result.InitialGas += 4
+			} else {
+				result.InitialGas += 16
+			}
+		}
+		if tx.Kind == TxKindCreate {
+			result.InitialGas += ((uint64(len(tx.Input)) + 31) / 32) * 2
+		}
+		for _, item := range tx.AccessList {
+			keys := uint64(len(item.StorageKeys))
+			data := (80 + 128*keys) * 16
+			result.InitialGas += 2900 + 2000*keys + data
+			result.FloorGas += data
+		}
+		result.InitialGas += uint64(len(tx.AuthorizationList)) * (101*16 + 3000 + 3000 + 2*100)
+		return result
+	}
 
 	// Count calldata tokens for both initial gas and floor gas.
 	// tokens_in_calldata = zero_bytes + non_zero_bytes * multiplier

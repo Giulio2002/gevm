@@ -145,9 +145,23 @@ func opSstore(interp *Interpreter, host Host) {
 	}
 	isIstanbul := interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Istanbul)
 	dynamicGas := interp.GasParams.SstoreDynamicGas(isIstanbul, &result.SStoreResult, result.IsCold)
+	if interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Amsterdam) {
+		if result.IsCold {
+			dynamicGas -= staticGas
+		}
+		if result.NewValuesChangesPresent() && result.IsOriginalZero() && result.IsOriginalEqNew() {
+			interp.Gas.RefundStateGas(64 * 1530)
+		}
+	}
 	if !interp.Gas.RecordCost(dynamicGas) {
 		interp.HaltOOG()
 		return
+	}
+	if interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Amsterdam) && result.IsOriginalZero() && result.IsOriginalEqPresent() && result.NewValuesChangesPresent() {
+		if !interp.Gas.RecordStateCost(64 * 1530) {
+			interp.HaltOOG()
+			return
+		}
 	}
 	refund := interp.GasParams.SstoreRefund(isIstanbul, &result.SStoreResult)
 	interp.Gas.RecordRefund(refund)

@@ -177,6 +177,13 @@ func newGasParams(spec ForkID) *GasParams {
 		t[GasIdTxFloorCostBaseGas] = 21000
 	}
 
+	if spec.IsEnabledIn(Amsterdam) {
+		t[GasIdSstoreSetWithoutLoadCost] = 10000
+		t[GasIdSstoreResetWithoutColdLoadCost] = 10000
+		t[GasIdSstoreSetRefund] = 10000
+		t[GasIdSstoreResetRefund] = 10000
+		t[GasIdSstoreClearingSlotRefund] = (10000 + 2100) * 4800 / 5000
+	}
 	return &GasParams{table: t}
 }
 

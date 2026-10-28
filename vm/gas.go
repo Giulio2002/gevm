@@ -74,6 +74,11 @@ type Gas struct {
 	remaining uint64
 	// Refunded gas. Used only at end of execution.
 	refunded int64
+	// EIP-8037: frame-local reservoir, rollback baseline and spill.
+	stateRemaining      uint64
+	stateBaseline       uint64
+	stateSpilled        uint64
+	stateCommittedSpill uint64
 	// Memoisation of values for memory expansion cost.
 	memory MemoryGas
 }
