@@ -178,6 +178,11 @@ func newGasParams(spec ForkID) *GasParams {
 	}
 
 	if spec.IsEnabledIn(Amsterdam) {
+		t[GasIdColdAccountAdditionalCost] = 3000 - 100
+		t[GasIdCreate] = 12000
+		t[GasIdTransferValueCost] = 9000 + 2300
+		t[GasIdNewAccountCost] = 0
+		t[GasIdNewAccountCostForSelfdestruct] = 9000
 		t[GasIdSstoreSetWithoutLoadCost] = 10000
 		t[GasIdSstoreResetWithoutColdLoadCost] = 10000
 		t[GasIdSstoreSetRefund] = 10000

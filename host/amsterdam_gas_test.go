@@ -8,6 +8,98 @@ import (
 )
 
 // Values follow execution-specs e27f097, transactions.calculate_intrinsic_cost.
+func TestAmsterdamSelfdestructCreationGas(t *testing.T) {
+	db := newMockDB()
+	db.accounts[addr(1)] = &state.AccountInfo{Balance: u(1_000_000_000), CodeHash: types.KeccakEmpty}
+	db.accounts[addr(32)] = &state.AccountInfo{Nonce: 1, Balance: u(1), Code: []byte{0x60, 33, 0xff}}
+	e := makeEvm(db, spec.Amsterdam, BlockEnv{})
+	tx := simpleTx(addr(1), addr(32), 0, 20_000_000, 1)
+	got := e.Transact(&tx)
+	want := uint64(15000 + 3 + 5000 + 3000 + 9000 + 120*1530)
+	if got.Kind != ResultSuccess || got.GasUsed != want {
+		t.Fatalf("got %+v want gas %d", got, want)
+	}
+}
+
+func TestAmsterdamCallCreationGas(t *testing.T) {
+	for _, balance := range []uint64{0, 1} {
+		t.Run(map[uint64]string{0: "out_of_funds", 1: "transfer"}[balance], func(t *testing.T) {
+			db := newMockDB()
+			db.accounts[addr(1)] = &state.AccountInfo{Balance: u(1_000_000_000), CodeHash: types.KeccakEmpty}
+			db.accounts[addr(32)] = &state.AccountInfo{Nonce: 1, Balance: u(balance), Code: []byte{0x5f, 0x5f, 0x5f, 0x5f, 0x60, 1, 0x60, 33, 0x61, 0x75, 0x30, 0xf1, 0}}
+			e := makeEvm(db, spec.Amsterdam, BlockEnv{})
+			tx := simpleTx(addr(1), addr(32), 0, 20_000_000, 1)
+			got := e.Transact(&tx)
+			want := uint64(15000 + 17 + 3000 + 9000)
+			if balance != 0 {
+				want += 120 * 1530
+			}
+			if got.Kind != ResultSuccess || got.GasUsed != want {
+				t.Fatalf("got %+v want gas %d", got, want)
+			}
+		})
+	}
+}
+
+func TestAmsterdamCodeDeposit(t *testing.T) {
+	db := newMockDB()
+	db.accounts[addr(1)] = &state.AccountInfo{Balance: u(1_000_000_000), CodeHash: types.KeccakEmpty}
+	e := makeEvm(db, spec.Amsterdam, BlockEnv{})
+	tx := simpleTx(addr(1), addr(32), 0, 20_000_000, 1)
+	tx.Kind = TxKindCreate
+	tx.Input = []byte{0x60, 1, 0x5f, 0xf3}
+	got := e.Transact(&tx)
+	want := uint64(24000 + 64 + 2 + 120*1530 + 8 + 6 + 1530)
+	if got.Kind != ResultSuccess || got.GasUsed != want {
+		t.Fatalf("got %+v want gas %d", got, want)
+	}
+}
+
+func TestAmsterdamNestedCreateGas(t *testing.T) {
+	db := newMockDB()
+	db.accounts[addr(1)] = &state.AccountInfo{Balance: u(1_000_000_000), CodeHash: types.KeccakEmpty}
+	db.accounts[addr(32)] = &state.AccountInfo{Nonce: 1, Code: []byte{0x5f, 0x5f, 0x5f, 0xf0, 0}}
+	e := makeEvm(db, spec.Amsterdam, BlockEnv{})
+	tx := simpleTx(addr(1), addr(32), 0, 20_000_000, 1)
+	got := e.Transact(&tx)
+	want := uint64(15000 + 6 + 12000 + 120*1530)
+	if got.Kind != ResultSuccess || got.GasUsed != want {
+		t.Fatalf("got %+v want gas %d", got, want)
+	}
+}
+
+func TestAmsterdamAccountCreationGas(t *testing.T) {
+	for _, create := range []bool{false, true} {
+		t.Run(map[bool]string{false: "transfer", true: "create"}[create], func(t *testing.T) {
+			db := newMockDB()
+			db.accounts[addr(1)] = &state.AccountInfo{Balance: u(1_000_000_000), CodeHash: types.KeccakEmpty}
+			e := makeEvm(db, spec.Amsterdam, BlockEnv{})
+			tx := simpleTx(addr(1), addr(32), 1, 20_000_000, 1)
+			want := uint64(21000 + 120*1530)
+			if create {
+				tx.Kind = TxKindCreate
+				want = 24000 + 120*1530
+			}
+			got := e.Transact(&tx)
+			if got.Kind != ResultSuccess || got.GasUsed != want {
+				t.Fatalf("got %+v want gas %d", got, want)
+			}
+		})
+	}
+}
+
+func TestAmsterdamColdAccountAccess(t *testing.T) {
+	db := newMockDB()
+	db.accounts[addr(1)] = &state.AccountInfo{Balance: u(1_000_000_000), CodeHash: types.KeccakEmpty}
+	db.accounts[addr(32)] = &state.AccountInfo{Nonce: 1, Code: []byte{0x60, 33, 0x31, 0}}
+	e := makeEvm(db, spec.Amsterdam, BlockEnv{})
+	tx := simpleTx(addr(1), addr(32), 0, 100000, 1)
+	got := e.Transact(&tx)
+	if got.GasUsed != 18003 {
+		t.Fatalf("got %+v", got)
+	}
+}
+
 func TestAmsterdamChildReservoir(t *testing.T) {
 	db := newMockDB()
 	db.accounts[addr(1)] = &state.AccountInfo{Balance: u(1_000_000_000), CodeHash: types.KeccakEmpty}

@@ -68,15 +68,26 @@ func (h *Handler) executeCall(inputs *vm.CallInputs, depth int, parentMem *vm.Me
 		}
 	}()
 	forkID := h.Host.Journal.Cfg.Spec
+	gas := newFrameGas(inputs.GasLimit, inputs.StateGas)
 
 	// Depth limit check
 	if depth > CallStackLimit {
 		return vm.NewCallOutcome(
-			vm.NewInterpreterResult(vm.InstructionResultCallTooDeep, nil, newFrameGas(inputs.GasLimit, inputs.StateGas)),
+			vm.NewInterpreterResult(vm.InstructionResultCallTooDeep, nil, gas),
 			inputs.ReturnMemoryOffset,
 		)
 	}
 
+	// A top-level value transfer pays its state-dependent dispatch cost.
+	if depth == 0 && forkID.IsEnabledIn(spec.Amsterdam) && !inputs.Value.Value.IsZero() {
+		target, err := h.Host.Journal.LoadAccount(inputs.TargetAddress)
+		if err != nil {
+			return vm.NewCallOutcome(vm.NewInterpreterResult(vm.InstructionResultFatalExternalError, nil, gas), inputs.ReturnMemoryOffset)
+		}
+		if target.Data.Info.IsEmpty() && !gas.RecordStateCost(120*1530) {
+			return vm.NewCallOutcome(vm.NewInterpreterResult(vm.InstructionResultOutOfGas, nil, gas), inputs.ReturnMemoryOffset)
+		}
+	}
 	// Create journal checkpoint
 	checkpoint := h.Host.Journal.Checkpoint()
 
@@ -95,7 +106,7 @@ func (h *Handler) executeCall(inputs *vm.CallInputs, depth int, parentMem *vm.Me
 				result = vm.InstructionResultFatalExternalError
 			}
 			return vm.NewCallOutcome(
-				vm.NewInterpreterResult(result, nil, newFrameGas(inputs.GasLimit, inputs.StateGas)),
+				vm.NewInterpreterResult(result, nil, gas),
 				inputs.ReturnMemoryOffset,
 			)
 		}
@@ -107,7 +118,7 @@ func (h *Handler) executeCall(inputs *vm.CallInputs, depth int, parentMem *vm.Me
 		if err := h.touchPrecompileCall(inputs.BytecodeAddress, inputs.Scheme, forkID); err != nil {
 			h.Host.Journal.CheckpointRevert(checkpoint)
 			return vm.NewCallOutcome(
-				vm.NewInterpreterResult(vm.InstructionResultFatalExternalError, nil, newFrameGas(inputs.GasLimit, inputs.StateGas)),
+				vm.NewInterpreterResult(vm.InstructionResultFatalExternalError, nil, gas),
 				inputs.ReturnMemoryOffset,
 			)
 		}
@@ -117,7 +128,8 @@ func (h *Handler) executeCall(inputs *vm.CallInputs, depth int, parentMem *vm.Me
 				inputs.BytecodeAddress, inputs.Input, inputs.GasLimit, inputs.Value.Value)
 		}
 		outcome := h.executePrecompile(precompile, inputs.Input, inputs.GasLimit, inputs.ReturnMemoryOffset, checkpoint)
-		outcome.Result.Gas.SetStateGas(inputs.StateGas)
+		gas.RecordCost(outcome.Result.Gas.Spent())
+		outcome.Result.Gas = gas
 		if h.hooks != nil && h.hooks.OnExit != nil {
 			gasUsed := inputs.GasLimit - outcome.Result.Gas.Remaining()
 			h.hooks.OnExit(depth, outcome.Result.Output, gasUsed,
@@ -151,7 +163,7 @@ func (h *Handler) executeCall(inputs *vm.CallInputs, depth int, parentMem *vm.Me
 		}
 		h.Host.Journal.CheckpointCommit()
 		outcome := vm.NewCallOutcome(
-			vm.NewInterpreterResult(vm.InstructionResultStop, nil, newFrameGas(inputs.GasLimit, inputs.StateGas)),
+			vm.NewInterpreterResult(vm.InstructionResultStop, nil, gas),
 			inputs.ReturnMemoryOffset,
 		)
 		if h.hooks != nil && h.hooks.OnExit != nil {
@@ -210,7 +222,7 @@ func (h *Handler) executeCall(inputs *vm.CallInputs, depth int, parentMem *vm.Me
 		pooled = true
 	}
 
-	interp.Gas.SetStateGas(inputs.StateGas)
+	interp.Gas = gas
 	// Set depth for tracer hooks
 	interp.Depth = depth
 
@@ -324,11 +336,12 @@ func (h *Handler) executeCreate(inputs *vm.CreateInputs, depth int, parentMem *v
 		}
 	}()
 	forkID := h.Host.Journal.Cfg.Spec
+	gas := newFrameGas(inputs.GasLimit, inputs.StateGas)
 
 	// Depth limit check
 	if depth > CallStackLimit {
 		return vm.NewCreateOutcome(
-			vm.NewInterpreterResult(vm.InstructionResultCallTooDeep, nil, newFrameGas(inputs.GasLimit, inputs.StateGas)),
+			vm.NewInterpreterResult(vm.InstructionResultCallTooDeep, nil, gas),
 			nil,
 		)
 	}
@@ -337,7 +350,7 @@ func (h *Handler) executeCreate(inputs *vm.CreateInputs, depth int, parentMem *v
 	callerResult, err := h.Host.Journal.LoadAccount(inputs.Caller)
 	if err != nil {
 		return vm.NewCreateOutcome(
-			vm.NewInterpreterResult(vm.InstructionResultFatalExternalError, nil, newFrameGas(inputs.GasLimit, inputs.StateGas)),
+			vm.NewInterpreterResult(vm.InstructionResultFatalExternalError, nil, gas),
 			nil,
 		)
 	}
@@ -346,7 +359,7 @@ func (h *Handler) executeCreate(inputs *vm.CreateInputs, depth int, parentMem *v
 	// Check caller balance
 	if callerAcc.Info.Balance.Lt(&inputs.Value) {
 		return vm.NewCreateOutcome(
-			vm.NewInterpreterResult(vm.InstructionResultOutOfFunds, nil, newFrameGas(inputs.GasLimit, inputs.StateGas)),
+			vm.NewInterpreterResult(vm.InstructionResultOutOfFunds, nil, gas),
 			nil,
 		)
 	}
@@ -358,7 +371,7 @@ func (h *Handler) executeCreate(inputs *vm.CreateInputs, depth int, parentMem *v
 		// so gas is returned to the parent frame. Address=nil means CREATE "failed"
 		// but the parent still gets its gas back.
 		return vm.NewCreateOutcome(
-			vm.NewInterpreterResult(vm.InstructionResultReturn, nil, newFrameGas(inputs.GasLimit, inputs.StateGas)),
+			vm.NewInterpreterResult(vm.InstructionResultReturn, nil, gas),
 			nil,
 		)
 	}
@@ -381,11 +394,16 @@ func (h *Handler) executeCreate(inputs *vm.CreateInputs, depth int, parentMem *v
 	_, loadErr := h.Host.Journal.LoadAccount(createdAddress)
 	if loadErr != nil {
 		return vm.NewCreateOutcome(
-			vm.NewInterpreterResult(vm.InstructionResultFatalExternalError, nil, newFrameGas(inputs.GasLimit, inputs.StateGas)),
+			vm.NewInterpreterResult(vm.InstructionResultFatalExternalError, nil, gas),
 			nil,
 		)
 	}
 
+	if depth == 0 && forkID.IsEnabledIn(spec.Amsterdam) && h.Host.Journal.State[createdAddress].Info.IsEmpty() {
+		if !gas.RecordStateCost(120 * 1530) {
+			return vm.NewCreateOutcome(vm.NewInterpreterResult(vm.InstructionResultOutOfGas, nil, gas), nil)
+		}
+	}
 	// Create account checkpoint (creates account, transfers value)
 	checkpoint, transferErr := h.Host.Journal.CreateAccountCheckpoint(
 		inputs.Caller, createdAddress, inputs.Value, forkID,
@@ -403,7 +421,7 @@ func (h *Handler) executeCreate(inputs *vm.CreateInputs, depth int, parentMem *v
 			result = vm.InstructionResultFatalExternalError
 		}
 		return vm.NewCreateOutcome(
-			vm.NewInterpreterResult(result, nil, newFrameGas(inputs.GasLimit, inputs.StateGas)),
+			vm.NewInterpreterResult(result, nil, gas),
 			nil,
 		)
 	}
@@ -420,7 +438,7 @@ func (h *Handler) executeCreate(inputs *vm.CreateInputs, depth int, parentMem *v
 		h.Host.Journal.ClearSelfdestruct(createdAddress)
 		addr := createdAddress
 		outcome := vm.NewCreateOutcome(
-			vm.NewInterpreterResult(vm.InstructionResultStop, nil, newFrameGas(inputs.GasLimit, inputs.StateGas)),
+			vm.NewInterpreterResult(vm.InstructionResultStop, nil, gas),
 			&addr,
 		)
 		if h.hooks != nil && h.hooks.OnExit != nil {
@@ -450,7 +468,7 @@ func (h *Handler) executeCreate(inputs *vm.CreateInputs, depth int, parentMem *v
 	)
 	interp.ReturnAlloc = h.ReturnAlloc
 
-	interp.Gas.SetStateGas(inputs.StateGas)
+	interp.Gas = gas
 	// Set depth for tracer hooks
 	interp.Depth = depth
 
@@ -516,7 +534,13 @@ func (h *Handler) returnCreate(
 	// Code deposit cost
 	gp := spec.NewGasParams(forkID)
 	depositCost := gp.CodeDepositCost(uint64(len(output)))
-	if !result.Gas.RecordCost(depositCost) {
+	depositOK := false
+	if forkID.IsEnabledIn(spec.Amsterdam) {
+		depositOK = result.Gas.RecordCost(6*((uint64(len(output))+31)/32)) && result.Gas.RecordStateCost(uint64(len(output))*1530)
+	} else {
+		depositOK = result.Gas.RecordCost(depositCost)
+	}
+	if !depositOK {
 		if forkID.IsEnabledIn(spec.Homestead) {
 			// Homestead+: OOG on code deposit
 			h.Host.Journal.CheckpointRevert(checkpoint)
@@ -554,7 +578,23 @@ func (h *Handler) runInterpreterLoop(interp *vm.Interpreter, depth int) {
 			return
 		}
 
+		var creationCharged bool
 		if interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Amsterdam) {
+			if interp.ActionData.Kind == vm.FrameInputCreate {
+				var ok bool
+				creationCharged, ok = h.prepareCreateGas(interp, depth+1)
+				if !ok {
+					interp.HasAction = false
+					return
+				}
+			}
+			if interp.ActionData.Kind == vm.FrameInputCall {
+				call := &interp.ActionData.Call
+				if call.Scheme == vm.CallSchemeCall && !call.Value.Value.IsZero() {
+					account := h.Host.Journal.State[call.TargetAddress]
+					creationCharged = account != nil && account.Info.IsEmpty()
+				}
+			}
 			reservoir := interp.Gas.DrainStateGas()
 			if interp.ActionData.Kind == vm.FrameInputCall {
 				interp.ActionData.Call.StateGas = reservoir
@@ -575,8 +615,14 @@ func (h *Handler) runInterpreterLoop(interp *vm.Interpreter, depth int) {
 		switch frameResult.Kind {
 		case vm.FrameResultCall:
 			h.handleCallReturn(interp, frameResult.Call)
+			if creationCharged && !frameResult.Call.Result.Result.IsOk() {
+				interp.Gas.RefundStateGas(120 * 1530)
+			}
 		case vm.FrameResultCreate:
 			h.handleCreateReturn(interp, frameResult.Create)
+			if creationCharged && !frameResult.Create.Result.Result.IsOk() {
+				interp.Gas.RefundStateGas(120 * 1530)
+			}
 		}
 	}
 }
