@@ -171,7 +171,7 @@ func TestEthereumTrieVector(t *testing.T) {
 	remaining := nibbles[:]
 	leafRLP := RlpEncodeList([][]byte{
 		RlpEncodeBytes(hexPrefixEncode(remaining, true)),
-		value,
+		RlpEncodeBytes(value), // leaf values are byte strings, including RLP-encoded account/storage payloads
 	})
 	want := types.Keccak256(leafRLP)
 	if root != want {

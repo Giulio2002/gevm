@@ -1,0 +1,98 @@
+{
+    "tests/ported_static/stTransactionTest/test_transaction_to_itself.py::test_transaction_to_itself[fork_Osaka-state_test]": {
+        "env": {
+            "currentCoinbase": "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
+            "currentGasLimit": "0x0f4240",
+            "currentNumber": "0x01",
+            "currentTimestamp": "0x03e8",
+            "currentRandom": "0x0000000000000000000000000000000000000000000000000000000000020000",
+            "currentDifficulty": "0x00",
+            "currentBaseFee": "0x0a",
+            "currentExcessBlobGas": "0x00"
+        },
+        "pre": {
+            "0x60478971839c84963db1986c096a4f416ff31f42": {
+                "nonce": "0x00",
+                "balance": "0x3b9aca00",
+                "code": "0x",
+                "storage": {}
+            }
+        },
+        "transaction": {
+            "chainId": "0x01",
+            "nonce": "0x00",
+            "gasPrice": "0x0a",
+            "gasLimit": [
+                "0x61a8"
+            ],
+            "to": "0x60478971839c84963db1986c096a4f416ff31f42",
+            "value": [
+                "0x01"
+            ],
+            "data": [
+                "0x"
+            ],
+            "sender": "0x60478971839c84963db1986c096a4f416ff31f42",
+            "secretKey": "0x0780c0d9cc9aa08b530e12726c9cac8368b979e6d6ad77d3073bd4c8ac56468a"
+        },
+        "post": {
+            "Osaka": [
+                {
+                    "hash": "0xcd870b42c1ff43b15899942d162b5d7be9722f38f75a4209e4d6bd52669b6eb7",
+                    "logs": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "receipt": {
+                        "transactionHash": "0x5e766d7ca689f203e6125cda46d94876cf33639d9e24d050eea56e6a56bdd19c",
+                        "type": "0x00",
+                        "cumulativeGasUsed": "0x5208",
+                        "bloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                        "logs": [],
+                        "status": true,
+                        "rlp": "0xf9010801825208b9010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c0"
+                    },
+                    "txbytes": "0xf85f800a8261a89460478971839c84963db1986c096a4f416ff31f42018025a0b678d6db5585724692dbb765967575045ebb9e9d69e71fb86357a343a690370da0299bd2b4b37a63597ecfb60976c1fef646ab9bf7a59990c06d3f850b10dc0f84",
+                    "indexes": {
+                        "data": 0,
+                        "gas": 0,
+                        "value": 0
+                    },
+                    "state": {
+                        "0x60478971839c84963db1986c096a4f416ff31f42": {
+                            "nonce": "0x01",
+                            "balance": "0x3b9795b0",
+                            "code": "0x",
+                            "storage": {}
+                        }
+                    }
+                }
+            ]
+        },
+        "config": {
+            "blobSchedule": {
+                "Cancun": {
+                    "target": "0x03",
+                    "max": "0x06",
+                    "baseFeeUpdateFraction": "0x32f0ed"
+                },
+                "Prague": {
+                    "target": "0x06",
+                    "max": "0x09",
+                    "baseFeeUpdateFraction": "0x4c6964"
+                },
+                "Osaka": {
+                    "target": "0x06",
+                    "max": "0x09",
+                    "baseFeeUpdateFraction": "0x4c6964"
+                }
+            },
+            "chainid": "0x01"
+        },
+        "_info": {
+            "hash": "0x111f42499ef7845e90400471037cd71a29b7a9034b26a280828da3692f7322a3",
+            "fixture-format": "state_test",
+            "comment": "`execution-specs` generated test",
+            "filling-transition-tool": "2.19.0",
+            "description": "Test_transaction_to_itself.",
+            "url": "https://github.com/ethereum/execution-specs/blob/e27f097ec7b3e6e8ee9c2c1873c183e8f7da7a6e/tests/ported_static/stTransactionTest/test_transaction_to_itself.py#L35"
+        }
+    }
+}

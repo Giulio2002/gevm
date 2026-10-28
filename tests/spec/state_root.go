@@ -1,6 +1,5 @@
-// State root MPT helpers: storageRoot and rlpEncodeAccount (used by tests
-// to verify the MPT primitives; the StateRoot driver function and its
-// account-merging machinery were unused and have been removed).
+// State root MPT helpers. The complete fixture/journal overlay driver lives
+// in state_root_overlay.go and is used by state fixture validation.
 package spec
 
 import (

@@ -342,8 +342,9 @@ func validateTxForFork(tx *DecodedTx, forkID gevmspec.ForkID) error {
 
 	// --- EIP-3860: initcode size limit (Shanghai+) ---
 	if forkID.IsEnabledIn(gevmspec.Shanghai) && tx.To == nil {
-		if uint64(len(tx.Data)) > 2*24576 { // MaxInitCodeSize = 2 * MaxCodeSize(24576)
-			return fmt.Errorf("initcode size %d exceeds max %d", len(tx.Data), 2*24576)
+		limit := gevmspec.MaxInitcodeSizeForFork(forkID)
+		if len(tx.Data) > limit {
+			return fmt.Errorf("initcode size %d exceeds max %d", len(tx.Data), limit)
 		}
 	}
 
