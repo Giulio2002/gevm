@@ -1,0 +1,74 @@
+{
+  "release": "tests@v21.0.2",
+  "published_at": "2026-10-26T16:29:51Z",
+  "execution_specs_commit": "e27f097ec7b3e6e8ee9c2c1873c183e8f7da7a6e",
+  "asset": "fixtures.tar.gz",
+  "sha256": "e2fa7ea2ea516459f9ab92284b2927892f318f4e1f78ca802cb05a6c3b479ed9",
+  "scopes": {
+    "state_tests/for_osaka": {
+      "files": 2190,
+      "total": 14665,
+      "passed": 13850,
+      "failed": 0,
+      "unsupported": 815,
+      "skipped": 0
+    },
+    "state_tests/for_amsterdam": {
+      "files": 2717,
+      "total": 16908,
+      "passed": 1131,
+      "failed": 14742,
+      "unsupported": 1035,
+      "skipped": 0,
+      "amsterdam_feature_groups": {
+        "eip2780_reduce_intrinsic_tx_gas": {
+          "failed": 230,
+          "unsupported": 26,
+          "passed": 13
+        },
+        "eip7708_eth_transfer_logs": {
+          "failed": 74
+        },
+        "eip7843_slotnum": {
+          "failed": 18
+        },
+        "eip7928_block_level_access_lists": {
+          "failed": 64,
+          "passed": 2
+        },
+        "eip7954_increase_max_contract_size": {
+          "failed": 53,
+          "unsupported": 3,
+          "passed": 2
+        },
+        "eip7976_increase_calldata_floor_cost": {
+          "failed": 355,
+          "passed": 26,
+          "unsupported": 162
+        },
+        "eip7981_increase_access_list_cost": {
+          "failed": 159,
+          "unsupported": 30
+        },
+        "eip7997_deterministic_factory_contract": {
+          "failed": 40
+        },
+        "eip8024_dupn_swapn_exchange": {
+          "failed": 288
+        },
+        "eip8037_state_creation_gas_cost_increase": {
+          "unsupported": 14,
+          "failed": 467,
+          "passed": 16
+        },
+        "eip8038_state_access_gas_cost_increase": {
+          "failed": 254,
+          "unsupported": 9
+        },
+        "eip8246_selfdestruct_no_burn": {
+          "failed": 12
+        }
+      }
+    }
+  }
+}
