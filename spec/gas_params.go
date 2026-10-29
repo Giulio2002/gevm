@@ -64,10 +64,10 @@ func (g *GasParams) Get(id GasId) uint64 {
 // gasParamsCache pre-computes GasParams for every ForkID at init time.
 // Since GasParams is read-only during execution, all interpreters sharing the
 // same ForkID can safely share a single pointer.
-var gasParamsCache [20]*GasParams
+var gasParamsCache [Amsterdam + 1]*GasParams
 
 func init() {
-	for i := ForkID(0); i <= Osaka; i++ {
+	for i := ForkID(0); i <= Amsterdam; i++ {
 		gasParamsCache[i] = newGasParams(i)
 	}
 }
@@ -177,6 +177,18 @@ func newGasParams(spec ForkID) *GasParams {
 		t[GasIdTxFloorCostBaseGas] = 21000
 	}
 
+	if spec.IsEnabledIn(Amsterdam) {
+		t[GasIdColdAccountAdditionalCost] = 3000 - 100
+		t[GasIdCreate] = 12000
+		t[GasIdTransferValueCost] = 9000 + 2300
+		t[GasIdNewAccountCost] = 0
+		t[GasIdNewAccountCostForSelfdestruct] = 9000
+		t[GasIdSstoreSetWithoutLoadCost] = 10000
+		t[GasIdSstoreResetWithoutColdLoadCost] = 10000
+		t[GasIdSstoreSetRefund] = 10000
+		t[GasIdSstoreResetRefund] = 10000
+		t[GasIdSstoreClearingSlotRefund] = (10000 + 2100) * 4800 / 5000
+	}
 	return &GasParams{table: t}
 }
 

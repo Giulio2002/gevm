@@ -56,6 +56,8 @@ const (
 	InstructionResultGasLimitTooHigh        InstructionResult = 0x49
 	InstructionResultSenderNotEOA           InstructionResult = 0x4a
 	InstructionResultNonceMismatch          InstructionResult = 0x4b
+	InstructionResultGasFloorTooLow         InstructionResult = 0x4c
+	InstructionResultBlockGasLimitTooHigh   InstructionResult = 0x4d
 )
 
 // IsOk returns true if the result is a success (Stop, Return, SelfDestruct).
@@ -119,7 +121,9 @@ func (r InstructionResult) IsError() bool {
 		InstructionResultEmptyAuthorizationList,
 		InstructionResultGasLimitTooHigh,
 		InstructionResultSenderNotEOA,
-		InstructionResultNonceMismatch:
+		InstructionResultNonceMismatch,
+		InstructionResultGasFloorTooLow,
+		InstructionResultBlockGasLimitTooHigh:
 		return true
 	}
 	return false
@@ -226,6 +230,10 @@ func (r InstructionResult) String() string {
 		return "SenderNotEOA"
 	case InstructionResultNonceMismatch:
 		return "NonceMismatch"
+	case InstructionResultGasFloorTooLow:
+		return "GasFloorTooLow"
+	case InstructionResultBlockGasLimitTooHigh:
+		return "BlockGasLimitTooHigh"
 	default:
 		return "Unknown"
 	}

@@ -1,0 +1,117 @@
+{
+    "tests/frontier/validation/test_transaction.py::test_tx_max_nonce[fork_Amsterdam-state_test]": {
+        "env": {
+            "currentCoinbase": "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
+            "currentGasLimit": "0x07270e00",
+            "currentNumber": "0x01",
+            "currentTimestamp": "0x03e8",
+            "currentRandom": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "currentDifficulty": "0x00",
+            "currentBaseFee": "0x07",
+            "currentExcessBlobGas": "0x00",
+            "slotNumber": "0x00"
+        },
+        "pre": {
+            "0x4e59b44847b379578588920ca78fbf26c0b4956c": {
+                "nonce": "0x01",
+                "balance": "0x00",
+                "code": "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf3",
+                "storage": {}
+            },
+            "0x88cc56974df9caff7737364e4e84208aeb80fd86": {
+                "nonce": "0xffffffffffffffff",
+                "balance": "0x033b2e3c9fd0803ce8000000",
+                "code": "0x",
+                "storage": {}
+            }
+        },
+        "transaction": {
+            "nonce": "0xffffffffffffffff",
+            "gasPrice": "0x0a",
+            "gasLimit": [
+                "0x07270e00"
+            ],
+            "to": "0xc0f6dc9e5836f54caadbf59cc69346c508e1992b",
+            "value": [
+                "0x00"
+            ],
+            "data": [
+                "0x"
+            ],
+            "sender": "0x88cc56974df9caff7737364e4e84208aeb80fd86",
+            "secretKey": "0x99a9fa1275a21b5a45f70e51731400e21a31c557c88a4f6a9ca17eb9be143a81"
+        },
+        "post": {
+            "Amsterdam": [
+                {
+                    "hash": "0x93a939240f2acf3174b4b19da215358481b532de968627b5353f52e8605902d8",
+                    "logs": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "txbytes": "0xf86988ffffffffffffffff0a8407270e0094c0f6dc9e5836f54caadbf59cc69346c508e1992b80801ca0e95048a07ef17e5ce11269f142b5cdc65d5eeb86915e67be1ef13d6fa2c7ab8da066e0c7bd771e894db937670e0d00fd562c2918a02804cbb163745c99667ac745",
+                    "indexes": {
+                        "data": 0,
+                        "gas": 0,
+                        "value": 0
+                    },
+                    "state": {
+                        "0x4e59b44847b379578588920ca78fbf26c0b4956c": {
+                            "nonce": "0x01",
+                            "balance": "0x00",
+                            "code": "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf3",
+                            "storage": {}
+                        },
+                        "0x88cc56974df9caff7737364e4e84208aeb80fd86": {
+                            "nonce": "0xffffffffffffffff",
+                            "balance": "0x033b2e3c9fd0803ce8000000",
+                            "code": "0x",
+                            "storage": {}
+                        }
+                    },
+                    "expectException": "TransactionException.NONCE_IS_MAX"
+                }
+            ]
+        },
+        "config": {
+            "blobSchedule": {
+                "Cancun": {
+                    "target": "0x03",
+                    "max": "0x06",
+                    "baseFeeUpdateFraction": "0x32f0ed"
+                },
+                "Prague": {
+                    "target": "0x06",
+                    "max": "0x09",
+                    "baseFeeUpdateFraction": "0x4c6964"
+                },
+                "Osaka": {
+                    "target": "0x06",
+                    "max": "0x09",
+                    "baseFeeUpdateFraction": "0x4c6964"
+                },
+                "BPO1": {
+                    "target": "0x0a",
+                    "max": "0x0f",
+                    "baseFeeUpdateFraction": "0x7f5a51"
+                },
+                "BPO2": {
+                    "target": "0x0e",
+                    "max": "0x15",
+                    "baseFeeUpdateFraction": "0xb24b3f"
+                },
+                "Amsterdam": {
+                    "target": "0x0e",
+                    "max": "0x15",
+                    "baseFeeUpdateFraction": "0xb24b3f"
+                }
+            },
+            "chainid": "0x01"
+        },
+        "_info": {
+            "hash": "0x75a40e4e7211b24a05b8eea3c0798983d73ec81735745349ae6c8956699c7fa9",
+            "fixture-format": "state_test",
+            "comment": "`execution-specs` generated test",
+            "filling-transition-tool": "2.19.0",
+            "description": "Test that a transaction with the maximum nonce value (`2**64 - 1`) is\nrejected, as the maximum usable nonce is `2**64 - 2`.\n\nThe sender account is funded at the same nonce so that clients which\ncheck nonce equality first reach the max-nonce check instead of\nrejecting the transaction with a nonce mismatch.",
+            "url": "https://github.com/ethereum/execution-specs/blob/e27f097ec7b3e6e8ee9c2c1873c183e8f7da7a6e/tests/frontier/validation/test_transaction.py#L118"
+        }
+    }
+}

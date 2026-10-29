@@ -58,7 +58,7 @@ func buildNode(entries []mptEntry, depth int) []byte {
 		remaining := entries[0].keyNibbles[depth:]
 		return RlpEncodeList([][]byte{
 			RlpEncodeBytes(hexPrefixEncode(remaining, true)),
-			entries[0].value,
+			RlpEncodeBytes(entries[0].value),
 		})
 	}
 

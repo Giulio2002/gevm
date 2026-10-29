@@ -27,7 +27,7 @@ const (
 	Cancun          ForkID = 17
 	Prague          ForkID = 18
 	Osaka           ForkID = 19
-	Amsterdam       ForkID = 20
+	Amsterdam       ForkID = 20 // Experimental/incomplete Glamsterdam execution rules; see docs/glamsterdam.md.
 )
 
 // LatestForkID is the default spec (Osaka).

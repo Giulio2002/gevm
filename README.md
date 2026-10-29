@@ -6,6 +6,26 @@ GEVM is a from-scratch port of the Rust reference EVM, preserving identical sema
 
 ## Status
 
+The default fork remains **Osaka**. Opt-in `spec.Amsterdam` passes the complete
+pinned Glamsterdam execution **state-test** suite, including multidimensional
+state gas, frame rollback, repricing and authorization accounting. This does not
+claim full block/engine or network conformance.
+
+Pinned fixture release: `ethereum/execution-specs tests@v21.0.2`
+(published October 26, 2026). Full state-root, logs-hash and exact transaction
+rejection checks pass in both default and opcode-tracing execution modes:
+
+| State-test scope | Passed | Failed | Unsupported | Skipped |
+|---|---:|---:|---:|---:|
+| `for_osaka` | 14,665 | 0 | 0 | 0 |
+| `for_amsterdam` | 16,908 | 0 | 0 | 0 |
+
+These totals include rejected transactions; no cases are excluded. See
+[the implementation boundary and reproduction commands](docs/glamsterdam.md).
+
+Previously reported suite totals below used the legacy harness and are **not**
+current-release conformance results:
+
 - 44,035 / 44,035 EEST GeneralStateTests passing (100%)
 - 882 / 882 BlockchainTests passing (100%)
 - 260 / 260 InvalidBlocks passing (100%)

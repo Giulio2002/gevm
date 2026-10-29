@@ -35,7 +35,7 @@ func createInner(interp *Interpreter, host Host, isCreate2 bool) {
 	if codeLen != 0 {
 		// EIP-3860: limit and meter initcode
 		if interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Shanghai) {
-			if codeLen > maxInitcodeSize {
+			if codeLen > spec.MaxInitcodeSizeForFork(interp.RuntimeFlag.ForkID) {
 				interp.Halt(InstructionResultCreateInitCodeSizeLimit)
 				return
 			}
@@ -85,7 +85,10 @@ func createInner(interp *Interpreter, host Host, isCreate2 bool) {
 
 	// EIP-150: 63/64 gas reduction for sub-call
 	var gasLimit uint64
-	if interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Tangerine) {
+	if interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Amsterdam) {
+		// The handler charges state creation before applying EIP-150.
+		gasLimit = 0
+	} else if interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Tangerine) {
 		gasLimit = interp.GasParams.CallStipendReduction(interp.Gas.Remaining())
 	} else {
 		gasLimit = interp.Gas.Remaining()
@@ -177,12 +180,18 @@ func loadAccountAndCalcGas(
 	}
 
 	// 2. Load account and calculate access gas
-	accountGas := loadAccountDelegated(interp, host, to, transfersValue, createEmptyAccount)
+	accountGas, newAccount := loadAccountDelegated(interp, host, to, transfersValue, createEmptyAccount)
 	if !interp.Gas.RecordCost(accountGas) {
 		interp.HaltOOG()
 		return 0, false
 	}
 
+	if forkID.IsEnabledIn(spec.Amsterdam) && newAccount {
+		if !interp.Gas.RecordStateCost(120 * 1530) {
+			interp.HaltOOG()
+			return 0, false
+		}
+	}
 	// 3. Gas limit calculation with EIP-150 63/64 rule
 	var gasLimit uint64
 	if forkID.IsEnabledIn(spec.Tangerine) {
@@ -220,7 +229,7 @@ func loadAccountDelegated(
 	addr types.Address,
 	transfersValue bool,
 	createEmptyAccount bool,
-) uint64 {
+) (uint64, bool) {
 	forkID := interp.RuntimeFlag.ForkID
 	isBerlin := forkID.IsEnabledIn(spec.Berlin)
 	isSpuriousDragon := forkID.IsEnabledIn(spec.SpuriousDragon)
@@ -253,7 +262,7 @@ func loadAccountDelegated(
 		cost += interp.GasParams.NewAccountCost(isSpuriousDragon, transfersValue)
 	}
 
-	return cost
+	return cost, acl.IsEmpty && createEmptyAccount && transfersValue
 }
 
 // isEIP7702Code returns true if code is an EIP-7702 delegation designator.
@@ -424,4 +433,3 @@ func opStaticcall(interp *Interpreter, host Host) {
 		IsStatic:           true,
 	})
 }
-

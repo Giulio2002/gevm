@@ -3,6 +3,7 @@ package vm
 
 import (
 	"github.com/Giulio2002/gevm/opcode"
+	"github.com/Giulio2002/gevm/spec"
 	"github.com/Giulio2002/gevm/types"
 	"github.com/holiman/uint256"
 )
@@ -180,6 +181,12 @@ func opSelfdestruct(interp *Interpreter, host Host) {
 	if !interp.Gas.RecordCost(cost) {
 		interp.HaltOOG()
 		return
+	}
+	if interp.RuntimeFlag.ForkID.IsEnabledIn(spec.Amsterdam) && result.HadValue && !result.TargetExists {
+		if !interp.Gas.RecordStateCost(120 * 1530) {
+			interp.HaltOOG()
+			return
+		}
 	}
 	if !result.PreviouslyDestroyed {
 		refund := interp.GasParams.SelfdestructRefund()

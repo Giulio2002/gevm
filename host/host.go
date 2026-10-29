@@ -303,10 +303,12 @@ func (h *EvmHost) Log(addr types.Address, topics *[4]types.B256, numTopics int, 
 // --- Self destruct ---
 
 func (h *EvmHost) SelfDestruct(addr, target types.Address) vm.SelfDestructResult {
+	balance := h.Journal.State[addr].Info.Balance
 	result, err := h.Journal.Selfdestruct(addr, target)
 	if err != nil {
 		return vm.SelfDestructResult{}
 	}
+	h.emitTransferLog(addr, target, balance)
 	return vm.SelfDestructResult{
 		HadValue:            result.Data.HadValue,
 		TargetExists:        result.Data.TargetExists,

@@ -92,6 +92,8 @@ type CallInputs struct {
 	ReturnMemoryOffset MemoryRange
 	// Gas limit of the call.
 	GasLimit uint64
+	// StateGas is the EIP-8037 reservoir granted to this frame.
+	StateGas uint64
 	// Address whose bytecode will be executed.
 	BytecodeAddress types.Address
 	// Target address (where storage is modified).
@@ -124,6 +126,8 @@ type CreateInputs struct {
 	InitCode types.Bytes
 	// Gas limit of the create call.
 	GasLimit uint64
+	// StateGas is the EIP-8037 reservoir granted to this frame.
+	StateGas uint64
 }
 
 // FrameInputKind distinguishes Call from Create frame inputs.

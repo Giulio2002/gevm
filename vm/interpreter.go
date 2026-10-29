@@ -20,10 +20,10 @@ type ForkGas struct {
 }
 
 // forkGasCache is pre-computed at init time for every ForkID.
-var forkGasCache [20]ForkGas
+var forkGasCache [spec.Amsterdam + 1]ForkGas
 
 func init() {
-	for i := spec.ForkID(0); i <= spec.Osaka; i++ {
+	for i := spec.ForkID(0); i <= spec.Amsterdam; i++ {
 		forkGasCache[i] = buildForkGas(i)
 	}
 }

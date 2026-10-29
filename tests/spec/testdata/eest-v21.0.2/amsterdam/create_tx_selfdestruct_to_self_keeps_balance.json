@@ -1,0 +1,150 @@
+{
+    "tests/amsterdam/eip8246_selfdestruct_no_burn/test_eip_mainnet.py::test_create_tx_selfdestruct_to_self_keeps_balance[fork_Amsterdam-state_test]": {
+        "env": {
+            "currentCoinbase": "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
+            "currentGasLimit": "0x07270e00",
+            "currentNumber": "0x01",
+            "currentTimestamp": "0x03e8",
+            "currentRandom": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "currentDifficulty": "0x00",
+            "currentBaseFee": "0x07",
+            "currentExcessBlobGas": "0x00",
+            "slotNumber": "0x00"
+        },
+        "pre": {
+            "0x4e59b44847b379578588920ca78fbf26c0b4956c": {
+                "nonce": "0x01",
+                "balance": "0x00",
+                "code": "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf3",
+                "storage": {}
+            },
+            "0xf6c3a9edc1afa0ad5b720e4d42e1437c43d3b3ff": {
+                "nonce": "0x00",
+                "balance": "0x033b2e3c9fd0803ce8000000",
+                "code": "0x",
+                "storage": {}
+            }
+        },
+        "transaction": {
+            "chainId": "0x01",
+            "nonce": "0x00",
+            "gasPrice": "0x0a",
+            "gasLimit": [
+                "0x07270e00"
+            ],
+            "value": [
+                "0x01"
+            ],
+            "data": [
+                "0x30ff"
+            ],
+            "sender": "0xf6c3a9edc1afa0ad5b720e4d42e1437c43d3b3ff",
+            "secretKey": "0x1ad604b3d94e06ec50b27732ec677f3d857c4d588f082f0016317697dd3a2d92",
+            "to": ""
+        },
+        "post": {
+            "Amsterdam": [
+                {
+                    "hash": "0x757a3d98cc4146d24c93cc2ccb27df2d2282f70769967f911aa5b9d2e4616625",
+                    "logs": "0xb7281557d5728128f6afc6f2f0f9d3d403a274af7e9f7585f12bb75beb212e6e",
+                    "receipt": {
+                        "transactionHash": "0x7257febf7f918b47d12da4d419dbd889cd27909d96714f70b9d670a375279889",
+                        "type": "0x00",
+                        "cumulativeGasUsed": "0x033e9c",
+                        "bloom": "0x00000008000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000008000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000002000000000000000000000000120000000000010000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000008000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000",
+                        "logs": [
+                            {
+                                "address": "0xfffffffffffffffffffffffffffffffffffffffe",
+                                "topics": [
+                                    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                                    "0x000000000000000000000000f6c3a9edc1afa0ad5b720e4d42e1437c43d3b3ff",
+                                    "0x000000000000000000000000081f85bbb63f960f83724898686620b3e01a5542"
+                                ],
+                                "data": "0x0000000000000000000000000000000000000000000000000000000000000001"
+                            }
+                        ],
+                        "status": true,
+                        "rlp": "0xf901a70183033e9cb9010000000008000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000008000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000002000000000000000000000000120000000000010000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000008000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000f89df89b94fffffffffffffffffffffffffffffffffffffffef863a0ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3efa0000000000000000000000000f6c3a9edc1afa0ad5b720e4d42e1437c43d3b3ffa0000000000000000000000000081f85bbb63f960f83724898686620b3e01a5542a00000000000000000000000000000000000000000000000000000000000000001"
+                    },
+                    "txbytes": "0xf84f800a8407270e0080018230ff25a0870eaf5ea4f817a802e2a0b1059cd7506737c35d2e13df5ceb3e63ec30965340a077c8cc30ea8f3ff52ac976a8b33c3852df9e5fbc4a030d950a692d77d0c5fe7c",
+                    "indexes": {
+                        "data": 0,
+                        "gas": 0,
+                        "value": 0
+                    },
+                    "state": {
+                        "0x4e59b44847b379578588920ca78fbf26c0b4956c": {
+                            "nonce": "0x01",
+                            "balance": "0x00",
+                            "code": "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf3",
+                            "storage": {}
+                        },
+                        "0xf6c3a9edc1afa0ad5b720e4d42e1437c43d3b3ff": {
+                            "nonce": "0x01",
+                            "balance": "0x033b2e3c9fd0803ce7df8de7",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x081f85bbb63f960f83724898686620b3e01a5542": {
+                            "nonce": "0x00",
+                            "balance": "0x01",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x09bbd4",
+                            "code": "0x",
+                            "storage": {}
+                        }
+                    }
+                }
+            ]
+        },
+        "config": {
+            "blobSchedule": {
+                "Cancun": {
+                    "target": "0x03",
+                    "max": "0x06",
+                    "baseFeeUpdateFraction": "0x32f0ed"
+                },
+                "Prague": {
+                    "target": "0x06",
+                    "max": "0x09",
+                    "baseFeeUpdateFraction": "0x4c6964"
+                },
+                "Osaka": {
+                    "target": "0x06",
+                    "max": "0x09",
+                    "baseFeeUpdateFraction": "0x4c6964"
+                },
+                "BPO1": {
+                    "target": "0x0a",
+                    "max": "0x0f",
+                    "baseFeeUpdateFraction": "0x7f5a51"
+                },
+                "BPO2": {
+                    "target": "0x0e",
+                    "max": "0x15",
+                    "baseFeeUpdateFraction": "0xb24b3f"
+                },
+                "Amsterdam": {
+                    "target": "0x0e",
+                    "max": "0x15",
+                    "baseFeeUpdateFraction": "0xb24b3f"
+                }
+            },
+            "chainid": "0x01"
+        },
+        "_info": {
+            "hash": "0x2c80109f18d158f5e668ef8a4baf6eea2414351e2c6fe18a0a0948af740a8821",
+            "fixture-format": "state_test",
+            "comment": "`execution-specs` generated test",
+            "filling-transition-tool": "2.19.0",
+            "description": "A creation transaction whose initcode self-destructs to itself.",
+            "url": "https://github.com/ethereum/execution-specs/blob/e27f097ec7b3e6e8ee9c2c1873c183e8f7da7a6e/tests/amsterdam/eip8246_selfdestruct_no_burn/test_eip_mainnet.py#L29",
+            "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-8246.md",
+            "reference-spec-version": "8be64cf6a01350938b93332cf0062ab7a3166f23"
+        }
+    }
+}

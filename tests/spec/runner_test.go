@@ -455,24 +455,30 @@ func TestEESTFixtures(t *testing.T) {
 		t.Skip("GEVM_EEST_DIR not set; skipping EEST fixture tests")
 	}
 
-	cfg := DefaultConfig()
-	passed, failed, failures := RunTestDir(testsDir, cfg)
-	t.Logf("EEST state tests: %d passed, %d failed (%.1f%% pass rate)",
-		passed, failed, float64(passed)*100/float64(passed+failed))
-
-	for i, f := range failures {
-		if i >= 50 {
-			break
-		}
-		detail := f.Detail
-		if len(detail) > 200 {
-			detail = detail[:200]
-		}
-		t.Logf("FAIL: %s | %s", f.Error.Error(), detail)
+	report, err := RunFixtureReport(testsDir, RunnerConfig{})
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	if failed > 0 {
-		t.Fatalf("%d/%d EEST tests failed", failed, passed+failed)
+	if path := os.Getenv("GEVM_EEST_REPORT"); path != "" {
+		data, err := json.MarshalIndent(report, "", "  ")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, data, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Logf("EEST state tests: %d total, %d passed, %d failed, %d unsupported, %d skipped (%d files)",
+		report.Total, report.Passed, report.Failed, report.Unsupported, report.Skipped, report.Files)
+	shown := 0
+	for _, c := range report.Cases {
+		if c.Status == "failed" && shown < 20 {
+			t.Logf("FAIL: %s [%s #%d]: %s", c.Test, c.Fork, c.Index, c.Detail)
+			shown++
+		}
+	}
+	if report.Failed > 0 || report.Unsupported > 0 || report.Skipped > 0 {
+		t.Fatalf("fixture suite incomplete: %d failures, %d unsupported, %d skipped", report.Failed, report.Unsupported, report.Skipped)
 	}
 }
 

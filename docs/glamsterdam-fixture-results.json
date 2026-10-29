@@ -1,0 +1,173 @@
+{
+  "release": "tests@v21.0.2",
+  "published_at": "2026-10-26T16:29:51Z",
+  "execution_specs_commit": "e27f097ec7b3e6e8ee9c2c1873c183e8f7da7a6e",
+  "asset": "fixtures.tar.gz",
+  "sha256": "e2fa7ea2ea516459f9ab92284b2927892f318f4e1f78ca802cb05a6c3b479ed9",
+  "runners": [
+    "default",
+    "opcode"
+  ],
+  "scope": "state fixtures only; not block/engine/fork-transition conformance",
+  "scopes": {
+    "state_tests/for_osaka": {
+      "files": 2190,
+      "total": 14665,
+      "passed": 14665,
+      "failed": 0,
+      "unsupported": 0,
+      "skipped": 0,
+      "rejection_cases": 815,
+      "independent_case_enumeration_verified": true
+    },
+    "state_tests/for_amsterdam": {
+      "files": 2717,
+      "total": 16908,
+      "passed": 16908,
+      "failed": 0,
+      "unsupported": 0,
+      "skipped": 0,
+      "rejection_cases": 1035,
+      "independent_case_enumeration_verified": true,
+      "amsterdam_feature_groups": {
+        "eip2780_reduce_intrinsic_tx_gas": {
+          "passed": 269,
+          "failed": 0,
+          "unsupported": 0,
+          "skipped": 0
+        },
+        "eip7708_eth_transfer_logs": {
+          "passed": 74,
+          "failed": 0,
+          "unsupported": 0,
+          "skipped": 0
+        },
+        "eip7843_slotnum": {
+          "passed": 18,
+          "failed": 0,
+          "unsupported": 0,
+          "skipped": 0
+        },
+        "eip7928_block_level_access_lists": {
+          "passed": 66,
+          "failed": 0,
+          "unsupported": 0,
+          "skipped": 0
+        },
+        "eip7954_increase_max_contract_size": {
+          "passed": 58,
+          "failed": 0,
+          "unsupported": 0,
+          "skipped": 0
+        },
+        "eip7976_increase_calldata_floor_cost": {
+          "passed": 543,
+          "failed": 0,
+          "unsupported": 0,
+          "skipped": 0
+        },
+        "eip7981_increase_access_list_cost": {
+          "passed": 189,
+          "failed": 0,
+          "unsupported": 0,
+          "skipped": 0
+        },
+        "eip7997_deterministic_factory_contract": {
+          "passed": 40,
+          "failed": 0,
+          "unsupported": 0,
+          "skipped": 0
+        },
+        "eip8024_dupn_swapn_exchange": {
+          "passed": 288,
+          "failed": 0,
+          "unsupported": 0,
+          "skipped": 0
+        },
+        "eip8037_state_creation_gas_cost_increase": {
+          "passed": 497,
+          "failed": 0,
+          "unsupported": 0,
+          "skipped": 0
+        },
+        "eip8038_state_access_gas_cost_increase": {
+          "passed": 263,
+          "failed": 0,
+          "unsupported": 0,
+          "skipped": 0
+        },
+        "eip8246_selfdestruct_no_burn": {
+          "passed": 12,
+          "failed": 0,
+          "unsupported": 0,
+          "skipped": 0
+        }
+      }
+    }
+  },
+  "bundled_amsterdam": {
+    "files": [
+      {
+        "file": "sstore_state_gas_drawn_from_reservoir.json",
+        "upstream": "amsterdam/eip8037_state_creation_gas_cost_increase/state_gas_sstore/sstore_state_gas_drawn_from_reservoir.json",
+        "sha256": "622d4fd11993914a32b0f1fa7ab3fbb57e05ca9a4f276f8df952cdd111007d11",
+        "cases": 1
+      },
+      {
+        "file": "cross_frame_refund_advance.json",
+        "upstream": "amsterdam/eip8037_state_creation_gas_cost_increase/state_gas_sstore/cross_frame_refund_advance.json",
+        "sha256": "03a276d11a29182bcb39510acf757e85489280c4f44db50b83e7f88ed4df3875",
+        "cases": 3
+      },
+      {
+        "file": "partially_discharged_advance_revoked_by_halt.json",
+        "upstream": "amsterdam/eip8037_state_creation_gas_cost_increase/state_gas_sstore/partially_discharged_advance_revoked_by_halt.json",
+        "sha256": "e69c132fbc37f2a893d5237be5ff5d4d322187c7cf585533399472a84e4e86d3",
+        "cases": 1
+      },
+      {
+        "file": "sstore_restoration_ancestor_revert.json",
+        "upstream": "amsterdam/eip8037_state_creation_gas_cost_increase/state_gas_sstore/sstore_restoration_ancestor_revert.json",
+        "sha256": "fdde8db7ed88b16514fba8d956f6c38e7a358887cbf14acfa2eda0c25a6a4e70",
+        "cases": 3
+      },
+      {
+        "file": "account_write_first_write_of_authority.json",
+        "upstream": "amsterdam/eip2780_reduce_intrinsic_tx_gas/authorization_charges/account_write_first_write_of_authority.json",
+        "sha256": "3b2418332be1fe816262bc8e7f7d712a415445733ee0c052f529f6e6555e5b4a",
+        "cases": 2
+      },
+      {
+        "file": "tx_max_nonce.json",
+        "upstream": "frontier/validation/transaction/tx_max_nonce.json",
+        "sha256": "a623cf4c8a81c95f03623146a0f0327114d9de4ac3c28c278a418d019b772340",
+        "cases": 1
+      },
+      {
+        "file": "unrecoverable_signature.json",
+        "upstream": "frontier/validation/transaction/unrecoverable_signature.json",
+        "sha256": "298aeab02b555eaebadffdb705659b4e5aa1e23f8d0878c2684fa851c7cf6261",
+        "cases": 3
+      },
+      {
+        "file": "create_tx_selfdestruct_to_self_keeps_balance.json",
+        "upstream": "amsterdam/eip8246_selfdestruct_no_burn/eip_mainnet/create_tx_selfdestruct_to_self_keeps_balance.json",
+        "sha256": "dbdd56cbb72a7c4c0b85a928071ea9fe10b389c11dfdd2d9051c28469800e238",
+        "cases": 1
+      },
+      {
+        "file": "auth_and_execution_state_oog_boundary.json",
+        "upstream": "amsterdam/eip8037_state_creation_gas_cost_increase/state_gas_set_code/auth_and_execution_state_oog_boundary.json",
+        "sha256": "7344c377d7ff28d24ddd9f0adf588a36efac1b0935900e850a978a77f1c622a8",
+        "cases": 2
+      },
+      {
+        "file": "auth_state_gas_persists_on_top_level_revert.json",
+        "upstream": "amsterdam/eip8037_state_creation_gas_cost_increase/state_gas_set_code/auth_state_gas_persists_on_top_level_revert.json",
+        "sha256": "145f5e4ba04a4533bb753f9b4b1a4ca935f36481211cdb432b62935198766f78",
+        "cases": 1
+      }
+    ],
+    "total": 18
+  }
+}

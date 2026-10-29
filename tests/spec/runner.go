@@ -260,12 +260,23 @@ func executeSingleTest(
 		}
 	}
 
+	// Check the complete MPT root, not only the optional account dump.
+	if tc.Hash.V != types.B256Zero {
+		root := stateRoot(db, evm.Journal, forkID)
+		if root != tc.Hash.V {
+			return makeErr(TestErrStateRootMismatch, fmt.Sprintf("state root: got %s, want %s", root.Hex(), tc.Hash.V.Hex()))
+		}
+	}
+
 	// Validate post-state accounts if available in fixture.
 	expectedState := tc.State
 	if expectedState == nil {
 		expectedState = tc.PostState
 	}
 	if expectedState != nil {
+		// The root above projects transaction finalization. The optional dump
+		// must observe that same finalized state (not pre-deletion nonces/code).
+		evm.Journal.CommitTx()
 		if err := validatePostState(evm.Journal, expectedState); err != nil {
 			return makeErr(TestErrStateRootMismatch, err.Error())
 		}
@@ -449,6 +460,10 @@ func BuildBlockEnv(unit *TestUnit, forkID gevmspec.ForkID) host.BlockEnv {
 		GasLimit:    env.CurrentGasLimit.V,
 	}
 
+	if env.SlotNumber != nil {
+		block.SlotNum = env.SlotNumber.V
+	}
+
 	if env.CurrentBaseFee != nil {
 		block.BaseFee = env.CurrentBaseFee.V
 	}
@@ -520,11 +535,12 @@ type FailureDetail struct {
 func RunTestDir(dir string, cfg RunnerConfig) (int, int, []*FailureDetail) {
 	files, err := FindJSONTests(dir)
 	if err != nil {
-		return 0, 0, []*FailureDetail{{
+		return 0, 1, []*FailureDetail{{
 			Error: &TestError{
 				TestFile: dir,
 				Kind:     TestErrDeserialize,
 			},
+			Detail: err.Error(),
 		}}
 	}
 
